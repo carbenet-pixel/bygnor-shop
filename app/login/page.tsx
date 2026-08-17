@@ -31,15 +31,20 @@ export default async function LoginPage({
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 flex justify-center">
+        <div className="mb-4 flex justify-center">
           <Image
             src="/images/bygnor-logo.png"
             alt="Bygnor"
-            width={180}
-            height={35}
+            width={220}
+            height={42}
             priority
           />
         </div>
+
+        <p className="mb-8 text-center text-xs text-slate-400">
+          Professionelt butiks- og restaurantinventar leveret til Grønland og
+          Nordatlanten.
+        </p>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
           <h1 className="mb-1 text-xl font-semibold text-slate-900">
@@ -98,6 +103,18 @@ export default async function LoginPage({
             </button>
           </form>
         </div>
+
+        <p className="mt-6 text-center text-xs text-slate-400">
+          Ikke kunde endnu?{" "}
+          <a
+            href="https://bygnor.com/bliv-kunde"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="font-medium text-slate-500 underline underline-offset-2 hover:text-[#185FA5]"
+          >
+            Ansøg om adgang
+          </a>
+        </p>
       </div>
     </div>
   );
