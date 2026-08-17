@@ -1,3 +1,4 @@
+import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 
@@ -30,10 +31,14 @@ export default async function LoginPage({
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <span className="text-2xl font-bold tracking-tight text-[#185FA5]">
-            Bygnor
-          </span>
+        <div className="mb-8 flex justify-center">
+          <Image
+            src="/images/bygnor-logo.png"
+            alt="Bygnor"
+            width={180}
+            height={35}
+            priority
+          />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
