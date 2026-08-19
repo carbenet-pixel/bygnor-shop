@@ -15,6 +15,13 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
     `[getUserRole] env=${process.env.VERCEL_ENV ?? "local"} url=${process.env.NEXT_PUBLIC_SUPABASE_URL} keyPrefix=${keyPrefix} userId=${userId}`,
   );
 
+  if (process.env.SUPABASE_SERVICE_ROLE_KEY?.startsWith("sb_publishable_")) {
+    console.error(
+      "[getUserRole] SUPABASE_SERVICE_ROLE_KEY holds a publishable key, not a secret key — role lookups will be blocked by RLS. Fix the env var in Vercel and redeploy.",
+    );
+    return null;
+  }
+
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
