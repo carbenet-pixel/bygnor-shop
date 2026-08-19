@@ -46,7 +46,7 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
-    const role = await getUserRole(supabase);
+    const role = await getUserRole(user.id);
 
     if (pathname.startsWith("/admin/users")) {
       if (role !== "superadmin") {

@@ -1,22 +1,29 @@
-import type { SupabaseClient } from "@supabase/supabase-js";
+import "server-only";
+import { createClient } from "@supabase/supabase-js";
 
 export type UserRole = "superadmin" | "admin" | "kunde";
 
-export async function getUserRole(
-  supabase: SupabaseClient,
-): Promise<UserRole | null> {
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+/**
+ * Looks up a user's role with the service-role key, bypassing RLS. Only ever
+ * call this with an already-authenticated user id (e.g. from
+ * `supabase.auth.getUser()`) — this function does not verify identity itself.
+ */
+export async function getUserRole(userId: string): Promise<UserRole | null> {
+  const supabaseAdmin = createClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY!,
+    {
+      auth: {
+        autoRefreshToken: false,
+        persistSession: false,
+      },
+    },
+  );
 
-  if (!user) {
-    return null;
-  }
-
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from("profiles")
     .select("role")
-    .eq("id", user.id)
+    .eq("id", userId)
     .single();
 
   if (error || !data) {
