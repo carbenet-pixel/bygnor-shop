@@ -18,7 +18,13 @@ async function login(formData: FormData) {
     redirect("/login?error=1");
   }
 
-  redirect("/shop");
+  const { data: factors } = await supabase.auth.mfa.listFactors();
+
+  if (factors && factors.totp.length > 0) {
+    redirect("/login/verify");
+  }
+
+  redirect("/login/setup-2fa");
 }
 
 export default async function LoginPage({
