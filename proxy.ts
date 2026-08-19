@@ -48,6 +48,11 @@ export async function proxy(request: NextRequest) {
 
     const role = await getUserRole(user.id);
 
+    // DEBUG (prod) — remove once the "ukendt" role issue is confirmed fixed on Vercel.
+    console.log(
+      `[proxy] path=${pathname} userId=${user.id} role=${role ?? "null"}`,
+    );
+
     if (pathname.startsWith("/admin/users")) {
       if (role !== "superadmin") {
         return NextResponse.redirect(new URL("/shop", request.url));
