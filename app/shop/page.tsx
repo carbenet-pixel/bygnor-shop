@@ -1,6 +1,8 @@
 import Image from "next/image";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getUserRole } from "@/lib/supabase/get-user-role";
 
 async function logout() {
   "use server";
@@ -11,9 +13,32 @@ async function logout() {
   redirect("/login");
 }
 
-export default function ShopPage() {
+export default async function ShopPage() {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    redirect("/login");
+  }
+
+  const role = await getUserRole(user.id);
+  const isAdmin = role === "admin" || role === "superadmin";
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="relative flex min-h-screen items-center justify-center bg-slate-50 px-4">
+      <div className="absolute top-4 right-4 flex items-center gap-3 text-xs text-slate-400">
+        <span>
+          Email: {user.email} · Rolle: {role ?? "ukendt"}
+        </span>
+        {isAdmin && (
+          <Link href="/admin" className="font-medium hover:text-[#185FA5]">
+            Admin →
+          </Link>
+        )}
+      </div>
+
       <div className="w-full max-w-sm text-center">
         <div className="mb-4 flex justify-center">
           <Image
