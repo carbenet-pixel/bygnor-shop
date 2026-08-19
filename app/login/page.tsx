@@ -30,9 +30,9 @@ async function login(formData: FormData) {
 export default async function LoginPage({
   searchParams,
 }: {
-  searchParams: Promise<{ error?: string }>;
+  searchParams: Promise<{ error?: string; reset?: string }>;
 }) {
-  const { error } = await searchParams;
+  const { error, reset } = await searchParams;
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
@@ -59,6 +59,12 @@ export default async function LoginPage({
           <p className="mb-6 text-sm text-slate-500">
             Velkommen til Bygnors ordreportal
           </p>
+
+          {reset === "success" && (
+            <div className="mb-5 rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+              Dit kodeord er opdateret — log ind med dit nye kodeord
+            </div>
+          )}
 
           {error && (
             <div className="mb-5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
@@ -99,6 +105,12 @@ export default async function LoginPage({
                 required
                 className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
               />
+              <a
+                href="/login/forgot-password"
+                className="mt-1 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+              >
+                Glemt kodeord?
+              </a>
             </div>
 
             <button
