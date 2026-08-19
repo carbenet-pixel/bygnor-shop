@@ -15,8 +15,6 @@ export default async function Setup2FAPage() {
     redirect("/login");
   }
 
-  const qrCodeSrc = `data:image/svg+xml;utf-8,${encodeURIComponent(data.totp.qr_code)}`;
-
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm">
@@ -41,7 +39,7 @@ export default async function Setup2FAPage() {
 
           <Setup2FAForm
             factorId={data.id}
-            qrCodeSrc={qrCodeSrc}
+            uri={data.totp.uri}
             secret={data.totp.secret}
           />
         </div>

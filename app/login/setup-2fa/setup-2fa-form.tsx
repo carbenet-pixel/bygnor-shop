@@ -1,37 +1,62 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
+import { toDataURL } from "qrcode";
 import { confirmSetup, type ConfirmSetupState } from "./actions";
 
 const initialState: ConfirmSetupState = { error: false };
 
 export function Setup2FAForm({
   factorId,
-  qrCodeSrc,
+  uri,
   secret,
 }: {
   factorId: string;
-  qrCodeSrc: string;
+  uri: string;
   secret: string;
 }) {
   const [state, formAction, isPending] = useActionState(
     confirmSetup,
     initialState,
   );
+  const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
+  const [qrError, setQrError] = useState(false);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    toDataURL(uri, { width: 200, margin: 1 })
+      .then((url) => {
+        if (!cancelled) setQrDataUrl(url);
+      })
+      .catch(() => {
+        if (!cancelled) setQrError(true);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [uri]);
 
   return (
     <form action={formAction} className="space-y-4">
       <input type="hidden" name="factorId" value={factorId} />
 
       <div className="flex justify-center">
-        {/* eslint-disable-next-line @next/next/no-img-element -- dynamically generated data URI, not a static asset */}
-        <img
-          src={qrCodeSrc}
-          alt="QR-kode til to-faktor login"
-          width={200}
-          height={200}
-          className="rounded-md border border-slate-200"
-        />
+        {qrDataUrl ? (
+          // eslint-disable-next-line @next/next/no-img-element -- generated client-side data URI, not a static asset
+          <img
+            src={qrDataUrl}
+            alt="QR-kode til to-faktor login"
+            width={200}
+            height={200}
+            className="rounded-md border border-slate-200"
+          />
+        ) : (
+          <div className="flex h-[200px] w-[200px] items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-xs text-slate-400">
+            {qrError ? "Kunne ikke generere QR-kode" : "Genererer QR-kode…"}
+          </div>
+        )}
       </div>
 
       <p className="text-center text-xs text-slate-400">
