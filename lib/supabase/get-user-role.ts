@@ -9,6 +9,13 @@ export type UserRole = "superadmin" | "admin" | "kunde";
  * `supabase.auth.getUser()`) — this function does not verify identity itself.
  */
 export async function getUserRole(userId: string): Promise<UserRole | null> {
+  // DEBUG — remove once the missing-role issue is resolved.
+  console.log(
+    "[getUserRole] SUPABASE_SERVICE_ROLE_KEY is",
+    process.env.SUPABASE_SERVICE_ROLE_KEY ? "set" : "undefined",
+  );
+  console.log("[getUserRole] looking up userId:", userId);
+
   const supabaseAdmin = createClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -25,6 +32,9 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
     .select("role")
     .eq("id", userId)
     .single();
+
+  // DEBUG — remove once the missing-role issue is resolved.
+  console.log("[getUserRole] data:", data, "error:", error);
 
   if (error || !data) {
     return null;

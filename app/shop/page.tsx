@@ -24,6 +24,8 @@ export default async function ShopPage() {
   }
 
   const role = await getUserRole(user.id);
+  // DEBUG — remove once the missing-role issue is resolved.
+  console.log("[ShopPage] role received from getUserRole:", role);
   const isAdmin = role === "admin" || role === "superadmin";
 
   return (
