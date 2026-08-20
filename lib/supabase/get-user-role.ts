@@ -9,12 +9,6 @@ export type UserRole = "superadmin" | "admin" | "kunde";
  * `supabase.auth.getUser()`) — this function does not verify identity itself.
  */
 export async function getUserRole(userId: string): Promise<UserRole | null> {
-  // DEBUG (prod) — remove once the "ukendt" role issue is confirmed fixed on Vercel.
-  const keyPrefix = process.env.SUPABASE_SERVICE_ROLE_KEY?.substring(0, 14);
-  console.log(
-    `[getUserRole] env=${process.env.VERCEL_ENV ?? "local"} url=${process.env.NEXT_PUBLIC_SUPABASE_URL} keyPrefix=${keyPrefix} userId=${userId}`,
-  );
-
   if (process.env.SUPABASE_SERVICE_ROLE_KEY?.startsWith("sb_publishable_")) {
     console.error(
       "[getUserRole] SUPABASE_SERVICE_ROLE_KEY holds a publishable key, not a secret key — role lookups will be blocked by RLS. Fix the env var in Vercel and redeploy.",
@@ -38,11 +32,6 @@ export async function getUserRole(userId: string): Promise<UserRole | null> {
     .select("role")
     .eq("id", userId)
     .single();
-
-  // DEBUG (prod) — remove once the "ukendt" role issue is confirmed fixed on Vercel.
-  console.log(
-    `[getUserRole] result data=${JSON.stringify(data)} error=${error ? JSON.stringify({ message: error.message, code: error.code, details: error.details, hint: error.hint }) : "null"}`,
-  );
 
   if (error || !data) {
     return null;

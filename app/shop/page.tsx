@@ -24,12 +24,6 @@ export default async function ShopPage() {
   }
 
   const role = await getUserRole(user.id);
-
-  // DEBUG (prod) — remove once the "ukendt" role issue is confirmed fixed on Vercel.
-  console.log(
-    `[ShopPage] env=${process.env.VERCEL_ENV ?? "local"} email=${user.email} userId=${user.id} rawRole=${JSON.stringify(role)} typeofRole=${typeof role}`,
-  );
-
   const isAdmin = role === "admin" || role === "superadmin";
 
   return (
