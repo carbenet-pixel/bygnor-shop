@@ -21,11 +21,25 @@ export async function resetPassword(
 
   const supabase = await createClient();
 
-  const { error: exchangeError } =
-    await supabase.auth.exchangeCodeForSession(code);
+  if (code) {
+    // Password-reset (PKCE) — veksl koden til en session.
+    const { error: exchangeError } =
+      await supabase.auth.exchangeCodeForSession(code);
 
-  if (exchangeError) {
-    return { error: "Linket er ugyldigt eller udløbet — anmod om et nyt" };
+    if (exchangeError) {
+      return { error: "Linket er ugyldigt eller udløbet — anmod om et nyt" };
+    }
+  } else {
+    // Invite-link — sessionen er allerede etableret client-side af
+    // HashSessionGate (hash-fragment-tokens skrevet til cookies). Bekræft
+    // den findes i stedet for at antage det.
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return { error: "Linket er ugyldigt eller udløbet — anmod om et nyt" };
+    }
   }
 
   const { error: updateError } = await supabase.auth.updateUser({

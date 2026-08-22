@@ -1,5 +1,6 @@
 import Image from "next/image";
 import { ResetPasswordForm } from "./reset-password-form";
+import { HashSessionGate } from "./hash-session-gate";
 
 export default async function ResetPasswordPage({
   searchParams,
@@ -34,13 +35,10 @@ export default async function ResetPasswordPage({
               <ResetPasswordForm code={code} />
             </>
           ) : (
-            <div className="mt-4 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-              Linket er ugyldigt eller udløbet. Anmod om et{" "}
-              <a href="/login/forgot-password" className="underline">
-                nyt reset-link
-              </a>
-              .
-            </div>
+            // Intet ?code= — enten et invite-link (tokens i URL'ens
+            // hash-fragment, kun læsbare client-side) eller et reelt
+            // ugyldigt link. HashSessionGate afgør hvilket.
+            <HashSessionGate />
           )}
         </div>
       </div>

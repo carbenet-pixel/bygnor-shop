@@ -5,7 +5,7 @@ import { resetPassword, type ResetPasswordState } from "./actions";
 
 const initialState: ResetPasswordState = { error: null };
 
-export function ResetPasswordForm({ code }: { code: string }) {
+export function ResetPasswordForm({ code }: { code: string | null }) {
   const [state, formAction, isPending] = useActionState(
     resetPassword,
     initialState,
@@ -31,7 +31,7 @@ export function ResetPasswordForm({ code }: { code: string }) {
       }}
       className="space-y-4"
     >
-      <input type="hidden" name="code" value={code} />
+      <input type="hidden" name="code" value={code ?? ""} />
 
       {errorMessage && (
         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
