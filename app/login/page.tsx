@@ -125,7 +125,7 @@ export default async function LoginPage({
         <p className="mt-6 text-center text-xs text-slate-400">
           Ikke kunde endnu?{" "}
           <a
-            href="https://bygnor.com/bliv-kunde"
+            href="https://bygnor.vercel.app/bliv-kunde"
             target="_blank"
             rel="noopener noreferrer"
             className="font-medium text-slate-500 underline underline-offset-2 hover:text-[#185FA5]"
