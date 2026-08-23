@@ -23,8 +23,13 @@ export async function resetPassword(
 
   if (code) {
     // Password-reset (PKCE) — veksl koden til en session.
-    const { error: exchangeError } =
+    const { data: exchangeData, error: exchangeError } =
       await supabase.auth.exchangeCodeForSession(code);
+
+    // DEBUG — remove once the reset-password error is confirmed fixed.
+    console.log(
+      `[resetPassword] exchangeCodeForSession userId=${exchangeData?.user?.id ?? "null"} error=${exchangeError ? JSON.stringify({ message: exchangeError.message, code: exchangeError.code, status: exchangeError.status }) : "null"}`,
+    );
 
     if (exchangeError) {
       return { error: "Linket er ugyldigt eller udløbet — anmod om et nyt" };
@@ -35,7 +40,13 @@ export async function resetPassword(
     // den findes i stedet for at antage det.
     const {
       data: { user },
+      error: getUserError,
     } = await supabase.auth.getUser();
+
+    // DEBUG — remove once the reset-password error is confirmed fixed.
+    console.log(
+      `[resetPassword] getUser userId=${user?.id ?? "null"} error=${getUserError ? JSON.stringify({ message: getUserError.message, code: getUserError.code, status: getUserError.status }) : "null"}`,
+    );
 
     if (!user) {
       return { error: "Linket er ugyldigt eller udløbet — anmod om et nyt" };
@@ -45,6 +56,11 @@ export async function resetPassword(
   const { error: updateError } = await supabase.auth.updateUser({
     password,
   });
+
+  // DEBUG — remove once the reset-password error is confirmed fixed.
+  console.log(
+    `[resetPassword] updateUser error=${updateError ? JSON.stringify({ name: updateError.name, message: updateError.message, code: updateError.code, status: updateError.status }) : "null"}`,
+  );
 
   if (updateError) {
     if (updateError.code === "weak_password") {
