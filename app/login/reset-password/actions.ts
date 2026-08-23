@@ -47,6 +47,11 @@ export async function resetPassword(
   });
 
   if (updateError) {
+    if (updateError.code === "weak_password") {
+      // Supabase's egen besked afspejler dynamisk det faktiske krav (længde
+      // og/eller kompleksitet), så vi undgår at hardkode eller gætte det.
+      return { error: `Kodeordet opfylder ikke kravene: ${updateError.message}` };
+    }
     return { error: "Kunne ikke opdatere kodeordet — prøv igen" };
   }
 
