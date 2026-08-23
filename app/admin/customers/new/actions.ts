@@ -1,6 +1,5 @@
 "use server";
 
-import { redirect } from "next/navigation";
 import {
   createCustomerAsAdmin,
   type AdminCreateCustomerErrorCode,
@@ -8,6 +7,7 @@ import {
 
 export type CreateCustomerState = {
   error: AdminCreateCustomerErrorCode | null;
+  success: boolean;
 };
 
 function parseOptionalNumber(raw: FormDataEntryValue | null): number | undefined {
@@ -43,8 +43,8 @@ export async function createCustomer(
   });
 
   if (!result.success) {
-    return { error: result.error };
+    return { error: result.error, success: false };
   }
 
-  redirect("/admin/customers/new?success=1");
+  return { error: null, success: true };
 }

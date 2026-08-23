@@ -1,9 +1,9 @@
 "use client";
 
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { createCustomer, type CreateCustomerState } from "./actions";
 
-const initialState: CreateCustomerState = { error: null };
+const initialState: CreateCustomerState = { error: null, success: false };
 
 const inputClass =
   "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
@@ -24,9 +24,38 @@ export function NewCustomerForm() {
   const [paymentMethod, setPaymentMethod] = useState<"kort" | "kredit">(
     "kort",
   );
+  const formRef = useRef<HTMLFormElement>(null);
+
+  // Succes og fejl kommer fra samme state-objekt, sat af det seneste
+  // dispatch — de kan derfor aldrig begge være "sande" fra to forskellige
+  // forsøg på samme tid. Ved succes ryddes formularen, så admin kan
+  // oprette endnu en kunde uden at forlade siden.
+  //
+  // Justerer paymentMethod under selve render (Reacts anbefalede mønster
+  // for at reagere på ændret state uden en effekt) — kun den imperative
+  // DOM-reset af de ukontrollerede felter ligger i en effekt.
+  const [handledState, setHandledState] = useState(state);
+  if (state !== handledState) {
+    setHandledState(state);
+    if (state.success) {
+      setPaymentMethod("kort");
+    }
+  }
+
+  useEffect(() => {
+    if (state.success) {
+      formRef.current?.reset();
+    }
+  }, [state]);
 
   return (
-    <form action={formAction} className="max-w-xl space-y-6">
+    <form ref={formRef} action={formAction} className="max-w-xl space-y-6">
+      {state.success && (
+        <div className="rounded-md border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-700">
+          Kunden er oprettet, og invitationsmailen er sendt.
+        </div>
+      )}
+
       {state.error && (
         <div className="rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
           {ERROR_MESSAGES[state.error] ?? ERROR_MESSAGES.server_error}
