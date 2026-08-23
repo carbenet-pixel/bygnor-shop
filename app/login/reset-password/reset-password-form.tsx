@@ -3,7 +3,7 @@
 import { useActionState, useState } from "react";
 import { resetPassword, type ResetPasswordState } from "./actions";
 
-const initialState: ResetPasswordState = { error: null };
+const initialState: ResetPasswordState = { error: null, needsMfa: false };
 
 export function ResetPasswordForm({ code }: { code: string | null }) {
   const [state, formAction, isPending] = useActionState(
@@ -83,12 +83,34 @@ export function ResetPasswordForm({ code }: { code: string | null }) {
         />
       </div>
 
+      {state.needsMfa && (
+        <div>
+          <label
+            htmlFor="totpCode"
+            className="mb-1 block text-sm font-medium text-slate-700"
+          >
+            Denne konto har to-faktor login — indtast koden fra din
+            authenticator-app
+          </label>
+          <input
+            id="totpCode"
+            name="totpCode"
+            type="text"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            required
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-center text-lg tracking-widest text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+          />
+        </div>
+      )}
+
       <button
         type="submit"
         disabled={isPending}
         className="w-full rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] focus:outline-none focus:ring-2 focus:ring-[#5A9D3C]/40 disabled:opacity-60"
       >
-        Gem nyt kodeord
+        {state.needsMfa ? "Bekræft og skift kodeord" : "Gem nyt kodeord"}
       </button>
     </form>
   );
