@@ -1,6 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { getUserRole } from "@/lib/supabase/get-user-role";
+import { getUserRole, getAccountStatus } from "@/lib/supabase/get-user-role";
 
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
@@ -38,6 +38,26 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith("/shop")) {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const status = await getAccountStatus(user.id);
+
+    // Deaktivering gælder kun kunde-rollen — admin/superadmin er aldrig
+    // påvirket, uanset is_active, så en fejlmarkering ikke kan lukke en
+    // administrator ude ved et uheld.
+    if (status?.role === "kunde" && !status.isActive) {
+      await supabase.auth.signOut();
+
+      const redirectResponse = NextResponse.redirect(
+        new URL("/login?error=inactive", request.url),
+      );
+      // signOut() satte cookie-sletningerne på `response` via setAll
+      // ovenfor — de skal overføres eksplicit, da vi returnerer et nyt
+      // redirect-svar i stedet for `response` selv.
+      response.cookies.getAll().forEach((cookie) => {
+        redirectResponse.cookies.set(cookie);
+      });
+      return redirectResponse;
     }
   }
 
