@@ -1,6 +1,8 @@
+import Link from "next/link";
 import { listCustomers } from "@/lib/customers";
 import { getDiscountGroups } from "@/lib/discount-groups";
 import { updateCustomerAction } from "./actions";
+import { PaymentFields } from "./payment-fields";
 
 export const dynamic = "force-dynamic";
 
@@ -43,13 +45,15 @@ export default async function AdminCustomersPage() {
                 return (
                   <tr key={customer.id}>
                     <td className={`${cellClass} font-medium text-slate-900`}>
-                      {customer.companyName ?? "—"}
+                      <Link
+                        href={`/admin/customers/${customer.id}`}
+                        className="hover:text-[#185FA5] hover:underline"
+                      >
+                        {customer.companyName ?? "—"}
+                      </Link>
                     </td>
                     <td className={`${cellClass} text-slate-500`}>
                       {customer.email ?? "—"}
-                    </td>
-                    <td className={`${cellClass} text-slate-500`}>
-                      {customer.paymentMethod ?? "—"}
                     </td>
                     <td className={cellClass}>
                       <form id={formId} action={updateCustomerAction}>
@@ -59,6 +63,14 @@ export default async function AdminCustomersPage() {
                           value={customer.id}
                         />
                       </form>
+                      <PaymentFields
+                        formId={formId}
+                        paymentMethod={customer.paymentMethod}
+                        creditLimit={customer.creditLimit}
+                        paymentTermsDays={customer.paymentTermsDays}
+                      />
+                    </td>
+                    <td className={cellClass}>
                       <select
                         form={formId}
                         name="discountGroup"
