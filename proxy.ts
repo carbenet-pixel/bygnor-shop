@@ -48,7 +48,10 @@ export async function proxy(request: NextRequest) {
 
     const role = await getUserRole(user.id);
 
-    if (pathname.startsWith("/admin/users")) {
+    if (
+      pathname.startsWith("/admin/users") ||
+      pathname.startsWith("/admin/discount-groups")
+    ) {
       if (role !== "superadmin") {
         return NextResponse.redirect(new URL("/shop", request.url));
       }

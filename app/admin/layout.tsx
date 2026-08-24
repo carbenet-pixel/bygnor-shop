@@ -1,16 +1,29 @@
 import Image from "next/image";
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
+import { getUserRole } from "@/lib/supabase/get-user-role";
 
 const navItems = [
   { href: "/admin/customers", label: "Kunder" },
   { href: "/admin/customers/new", label: "Opret kunde" },
 ];
 
-export default function AdminLayout({
+export default async function AdminLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  const role = user ? await getUserRole(user.id) : null;
+
+  const items =
+    role === "superadmin"
+      ? [...navItems, { href: "/admin/discount-groups", label: "Rabatgrupper" }]
+      : navItems;
+
   return (
     <div className="flex min-h-screen bg-slate-50">
       <aside className="w-56 shrink-0 border-r border-slate-200 bg-white px-4 py-6">
@@ -25,7 +38,7 @@ export default function AdminLayout({
         </div>
 
         <nav className="space-y-1">
-          {navItems.map((item) => (
+          {items.map((item) => (
             <Link
               key={item.href}
               href={item.href}

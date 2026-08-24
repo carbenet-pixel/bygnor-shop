@@ -82,12 +82,14 @@ export async function POST(request: NextRequest) {
 
   if (!result.success) {
     const status =
-      result.error === "validation_error" ||
-      result.error === "terms_not_accepted" ||
-      result.error === "cvr_invalid" ||
-      result.error === "email_taken"
-        ? 400
-        : 500;
+      result.error === "rate_limited"
+        ? 429
+        : result.error === "validation_error" ||
+            result.error === "terms_not_accepted" ||
+            result.error === "cvr_invalid" ||
+            result.error === "email_taken"
+          ? 400
+          : 500;
     return NextResponse.json(result, { status, headers });
   }
 

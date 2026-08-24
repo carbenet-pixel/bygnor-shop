@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCvr } from "@/lib/cvr";
 import { sendMail } from "@/lib/mail";
+import { getDiscountGroups } from "@/lib/discount-groups";
 
 // ---------------------------------------------------------------------------
 // Delt kerne — CVR-check, invite, profiles-update, delivery_addresses-insert,
@@ -21,7 +22,7 @@ type CustomerAccountDetails = {
   phone: string | null;
   paymentMethod: "kort" | "kredit";
   preferredPayment: "kort" | "kredit" | null;
-  discountGroup: string | null;
+  discountGroup: string;
   individualDiscount: number | null;
   creditLimit: number | null;
   paymentTermsDays: number | null;
@@ -34,7 +35,11 @@ type CustomerAccountDetails = {
   privacyAcceptedAt: string | null;
 };
 
-type CoreErrorCode = "cvr_invalid" | "email_taken" | "server_error";
+type CoreErrorCode =
+  | "cvr_invalid"
+  | "email_taken"
+  | "rate_limited"
+  | "server_error";
 
 type CoreResult =
   | { success: true; companyName: string }
@@ -83,6 +88,14 @@ async function createCustomerAccount(
   if (inviteError || !inviteData.user) {
     if (inviteError?.code === "email_exists") {
       return { success: false, error: "email_taken" };
+    }
+    if (
+      inviteError?.code === "over_email_send_rate_limit" ||
+      inviteError?.code === "over_request_rate_limit"
+    ) {
+      // Supabase's egen (meget lave) standard-mailkvote, ikke en fejl i
+      // selve oprettelsen — reelt fix er en konfigureret SMTP-udbyder.
+      return { success: false, error: "rate_limited" };
     }
     console.error(
       "[createCustomerAccount] inviteUserByEmail failed",
@@ -203,6 +216,7 @@ export type ApplyErrorCode =
   | "terms_not_accepted"
   | "cvr_invalid"
   | "email_taken"
+  | "rate_limited"
   | "server_error";
 
 export type ApplyResult =
@@ -270,7 +284,9 @@ export async function applyForAccount(
     phone: phone || null,
     paymentMethod: "kort",
     preferredPayment: preferredPayment || null,
-    discountGroup: null,
+    // profiles.discount_group er NOT NULL med default 'standard' (0007) —
+    // selvbetjening får altid standardgruppen, uden undtagelser.
+    discountGroup: "standard",
     individualDiscount: null,
     creditLimit: null,
     paymentTermsDays: null,
@@ -346,6 +362,7 @@ export type AdminCreateCustomerErrorCode =
   | "validation_error"
   | "cvr_invalid"
   | "email_taken"
+  | "rate_limited"
   | "server_error";
 
 export type AdminCreateCustomerResult =
@@ -403,6 +420,15 @@ export async function createCustomerAsAdmin(
     return { success: false, error: "validation_error" };
   }
 
+  // Dropdown'en i UI'en burde altid sende et gyldigt id, men stol aldrig på
+  // klienten — valider mod de faktiske rabatgrupper i stedet for at lade en
+  // ugyldig værdi ramme FK-constraintet som en uforklaret server_error.
+  const validGroups = await getDiscountGroups();
+  const requestedGroup = discountGroup || "standard";
+  if (!validGroups.some((group) => group.id === requestedGroup)) {
+    return { success: false, error: "validation_error" };
+  }
+
   return createCustomerAccount({
     companyName,
     cvrNumber,
@@ -415,7 +441,7 @@ export async function createCustomerAsAdmin(
     phone: phone || null,
     paymentMethod,
     preferredPayment: null,
-    discountGroup: discountGroup || null,
+    discountGroup: requestedGroup,
     individualDiscount: individualDiscount ?? null,
     creditLimit: paymentMethod === "kredit" ? (creditLimit ?? null) : null,
     paymentTermsDays:

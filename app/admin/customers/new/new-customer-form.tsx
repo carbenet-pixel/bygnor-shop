@@ -2,6 +2,7 @@
 
 import { useActionState, useEffect, useRef, useState } from "react";
 import { createCustomer, type CreateCustomerState } from "./actions";
+import type { DiscountGroup } from "@/lib/discount-groups";
 
 const initialState: CreateCustomerState = { error: null, success: false };
 
@@ -13,10 +14,16 @@ const ERROR_MESSAGES: Record<string, string> = {
   validation_error: "Udfyld alle påkrævede felter korrekt.",
   cvr_invalid: "CVR-nummeret kunne ikke verificeres.",
   email_taken: "Der findes allerede en bruger med denne email.",
+  rate_limited:
+    "Supabase har midlertidigt stoppet for flere invitations-mails (kvote nået). Vent et par minutter og prøv igen.",
   server_error: "Der opstod en fejl. Prøv igen.",
 };
 
-export function NewCustomerForm() {
+export function NewCustomerForm({
+  discountGroups,
+}: {
+  discountGroups: DiscountGroup[];
+}) {
   const [state, formAction, isPending] = useActionState(
     createCustomer,
     initialState,
@@ -223,12 +230,18 @@ export function NewCustomerForm() {
           <label htmlFor="discountGroup" className={labelClass}>
             Rabatgruppe
           </label>
-          <input
+          <select
             id="discountGroup"
             name="discountGroup"
-            type="text"
+            defaultValue="standard"
             className={inputClass}
-          />
+          >
+            {discountGroups.map((group) => (
+              <option key={group.id} value={group.id}>
+                {group.name} ({group.discountPercent}%)
+              </option>
+            ))}
+          </select>
         </div>
 
         <div>
