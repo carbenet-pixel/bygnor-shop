@@ -3,15 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/supabase/get-user-role";
-
-async function logout() {
-  "use server";
-
-  const supabase = await createClient();
-  await supabase.auth.signOut();
-
-  redirect("/login");
-}
+import { logout } from "@/lib/supabase/actions";
 
 export default async function ShopPage() {
   const supabase = await createClient();

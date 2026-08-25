@@ -2,6 +2,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/supabase/get-user-role";
+import { logout } from "@/lib/supabase/actions";
 
 const navItems = [
   { href: "/admin/customers", label: "Kunder" },
@@ -55,6 +56,15 @@ export default async function AdminLayout({
         >
           ← Til shop
         </Link>
+
+        <form action={logout} className="mt-2">
+          <button
+            type="submit"
+            className="text-xs text-slate-400 hover:text-[#185FA5]"
+          >
+            Log ud
+          </button>
+        </form>
       </aside>
 
       <main className="flex-1 p-8">{children}</main>
