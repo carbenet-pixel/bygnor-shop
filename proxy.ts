@@ -35,6 +35,19 @@ export async function proxy(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
+  // signOut() sætter cookie-sletningerne på `response` via setAll ovenfor —
+  // skal læses EFTER signOut() er kaldt, og skal derfor lukke over den
+  // samme variabel (ikke modtage den som parameter), da setAll genskaber
+  // `response` ved hvert kald.
+  const signOutAndRedirect = async (path: string): Promise<NextResponse> => {
+    await supabase.auth.signOut();
+    const redirectResponse = NextResponse.redirect(new URL(path, request.url));
+    response.cookies.getAll().forEach((cookie) => {
+      redirectResponse.cookies.set(cookie);
+    });
+    return redirectResponse;
+  };
+
   if (pathname.startsWith("/shop")) {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
@@ -42,22 +55,18 @@ export async function proxy(request: NextRequest) {
 
     const status = await getAccountStatus(user.id);
 
+    // En auth.users-række uden tilhørende profiles-række (fx trigger-fejl,
+    // manuelt oprettet bruger, eller en profil slettet ved en fejl) må ikke
+    // slippe igennem med "rolle: ukendt" — kræv en gyldig profil.
+    if (!status) {
+      return signOutAndRedirect("/login?error=no_profile");
+    }
+
     // Deaktivering gælder kun kunde-rollen — admin/superadmin er aldrig
     // påvirket, uanset is_active, så en fejlmarkering ikke kan lukke en
     // administrator ude ved et uheld.
-    if (status?.role === "kunde" && !status.isActive) {
-      await supabase.auth.signOut();
-
-      const redirectResponse = NextResponse.redirect(
-        new URL("/login?error=inactive", request.url),
-      );
-      // signOut() satte cookie-sletningerne på `response` via setAll
-      // ovenfor — de skal overføres eksplicit, da vi returnerer et nyt
-      // redirect-svar i stedet for `response` selv.
-      response.cookies.getAll().forEach((cookie) => {
-        redirectResponse.cookies.set(cookie);
-      });
-      return redirectResponse;
+    if (status.role === "kunde" && !status.isActive) {
+      return signOutAndRedirect("/login?error=inactive");
     }
   }
 

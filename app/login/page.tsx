@@ -70,7 +70,9 @@ export default async function LoginPage({
             <div className="mb-5 rounded-md border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
               {error === "inactive"
                 ? "Din konto er deaktiveret — kontakt Bygnor for at få genåbnet adgang"
-                : "Forkert email eller kodeord"}
+                : error === "no_profile"
+                  ? "Din konto er ikke korrekt sat op — kontakt Bygnor"
+                  : "Forkert email eller kodeord"}
             </div>
           )}
 
