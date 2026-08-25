@@ -48,20 +48,12 @@ type CoreResult =
 async function createCustomerAccount(
   details: CustomerAccountDetails,
 ): Promise<CoreResult> {
-  // DEBUG — remove once the admin-form success/error bug is confirmed fixed.
-  console.log(
-    `[createCustomerAccount] start createdBy=${details.createdBy} email=${details.email} cvr=${details.cvrNumber}`,
-  );
-
   // 1. Verificér CVR FØRST — opret intet hvis den ikke er gyldig. Det
   // indtastede firmanavn er den autoritative værdi, ikke CVR-opslagets
   // returnerede navn — undgår at en stub (eller senere en rigtig udbyder,
   // hvis den nogensinde returnerer et navn admin bevidst har rettet) tavst
   // overskriver hvad der reelt blev indtastet.
   const cvrResult = await verifyCvr(details.cvrNumber);
-  console.log(
-    `[createCustomerAccount] verifyCvr result: valid=${cvrResult.valid}`,
-  );
   if (!cvrResult.valid) {
     return { success: false, error: "cvr_invalid" };
   }
@@ -83,11 +75,6 @@ async function createCustomerAccount(
     await supabaseAdmin.auth.admin.inviteUserByEmail(details.email, {
       redirectTo: "https://bygnor-shop.vercel.app/login/reset-password",
     });
-
-  // DEBUG — remove once the admin-form success/error bug is confirmed fixed.
-  console.log(
-    `[createCustomerAccount] inviteUserByEmail result: userId=${inviteData?.user?.id} error=${inviteError ? JSON.stringify({ message: inviteError.message, code: inviteError.code, status: inviteError.status }) : "null"}`,
-  );
 
   if (inviteError || !inviteData.user) {
     if (inviteError?.code === "email_exists") {
@@ -138,11 +125,6 @@ async function createCustomerAccount(
       })
       .eq("id", userId);
 
-    // DEBUG — remove once the admin-form success/error bug is confirmed fixed.
-    console.log(
-      `[createCustomerAccount] profiles update error=${updateError ? JSON.stringify({ message: updateError.message, code: updateError.code, details: updateError.details, hint: updateError.hint }) : "null"}`,
-    );
-
     if (updateError) throw updateError;
 
     const { error: addressError } = await supabaseAdmin
@@ -155,11 +137,6 @@ async function createCustomerAccount(
         country: details.country,
         is_default: true,
       });
-
-    // DEBUG — remove once the admin-form success/error bug is confirmed fixed.
-    console.log(
-      `[createCustomerAccount] delivery_addresses insert error=${addressError ? JSON.stringify({ message: addressError.message, code: addressError.code, details: addressError.details, hint: addressError.hint }) : "null"}`,
-    );
 
     if (addressError) throw addressError;
   } catch (err) {
@@ -182,11 +159,6 @@ async function createCustomerAccount(
     }
     return { success: false, error: "server_error" };
   }
-
-  // DEBUG — remove once the admin-form success/error bug is confirmed fixed.
-  console.log(
-    `[createCustomerAccount] success userId=${userId} companyName=${finalCompanyName}`,
-  );
 
   return { success: true, companyName: finalCompanyName };
 }

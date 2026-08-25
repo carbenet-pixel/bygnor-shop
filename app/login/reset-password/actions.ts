@@ -39,11 +39,6 @@ export async function resetPassword(
     const { error: exchangeError } =
       await supabase.auth.exchangeCodeForSession(code);
 
-    // DEBUG — remove once the reset-password/AAL2 flow is confirmed working.
-    console.log(
-      `[resetPassword] exchangeCodeForSession error=${exchangeError ? JSON.stringify({ message: exchangeError.message, code: exchangeError.code, status: exchangeError.status }) : "null"}`,
-    );
-
     if (exchangeError) {
       return { error: "Linket er ugyldigt eller udløbet — anmod om et nyt", needsMfa: false };
     }
@@ -67,32 +62,14 @@ export async function resetPassword(
       code: totpCode,
     });
 
-    // DEBUG — remove once the reset-password/AAL2 flow is confirmed working.
-    console.log(
-      `[resetPassword] mfa.challengeAndVerify error=${mfaError ? JSON.stringify({ message: mfaError.message, code: mfaError.code, status: mfaError.status }) : "null"}`,
-    );
-
     if (mfaError) {
       return { error: "Forkert kode — prøv igen", needsMfa: true };
     }
   }
 
-  // DEBUG — remove once the invalid_credentials-after-reset issue is found.
-  // Aldrig selve værdien — kun længden, til at udelukke tomt/afkortet/
-  // uventet indhold (fx et browser-genereret kodeord der blev accepteret
-  // ved et uheld i stedet for det tiltænkte).
-  console.log(
-    `[resetPassword] password.length=${password.length} confirmPassword.length=${confirmPassword.length}`,
-  );
-
   const { error: updateError } = await supabase.auth.updateUser({
     password,
   });
-
-  // DEBUG — remove once the reset-password/AAL2 flow is confirmed working.
-  console.log(
-    `[resetPassword] updateUser error=${updateError ? JSON.stringify({ name: updateError.name, message: updateError.message, code: updateError.code, status: updateError.status }) : "null"}`,
-  );
 
   if (updateError) {
     if (updateError.code === "weak_password") {

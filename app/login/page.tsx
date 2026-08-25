@@ -14,11 +14,6 @@ async function login(formData: FormData) {
     password,
   });
 
-  // DEBUG — remove once the post-reset login 400 is confirmed fixed.
-  console.log(
-    `[login] signInWithPassword email=${email} error=${error ? JSON.stringify({ message: error.message, code: error.code, status: error.status }) : "null"}`,
-  );
-
   if (error) {
     redirect("/login?error=1");
   }
