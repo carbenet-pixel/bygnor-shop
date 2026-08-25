@@ -77,6 +77,14 @@ export async function resetPassword(
     }
   }
 
+  // DEBUG — remove once the invalid_credentials-after-reset issue is found.
+  // Aldrig selve værdien — kun længden, til at udelukke tomt/afkortet/
+  // uventet indhold (fx et browser-genereret kodeord der blev accepteret
+  // ved et uheld i stedet for det tiltænkte).
+  console.log(
+    `[resetPassword] password.length=${password.length} confirmPassword.length=${confirmPassword.length}`,
+  );
+
   const { error: updateError } = await supabase.auth.updateUser({
     password,
   });
