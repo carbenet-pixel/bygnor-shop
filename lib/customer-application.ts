@@ -53,16 +53,20 @@ async function createCustomerAccount(
     `[createCustomerAccount] start createdBy=${details.createdBy} email=${details.email} cvr=${details.cvrNumber}`,
   );
 
-  // 1. Verificér CVR FØRST — opret intet hvis den ikke er gyldig.
+  // 1. Verificér CVR FØRST — opret intet hvis den ikke er gyldig. Det
+  // indtastede firmanavn er den autoritative værdi, ikke CVR-opslagets
+  // returnerede navn — undgår at en stub (eller senere en rigtig udbyder,
+  // hvis den nogensinde returnerer et navn admin bevidst har rettet) tavst
+  // overskriver hvad der reelt blev indtastet.
   const cvrResult = await verifyCvr(details.cvrNumber);
   console.log(
-    `[createCustomerAccount] verifyCvr result: valid=${cvrResult.valid} companyName=${cvrResult.companyName}`,
+    `[createCustomerAccount] verifyCvr result: valid=${cvrResult.valid}`,
   );
   if (!cvrResult.valid) {
     return { success: false, error: "cvr_invalid" };
   }
 
-  const finalCompanyName = cvrResult.companyName ?? details.companyName;
+  const finalCompanyName = details.companyName;
 
   let supabaseAdmin;
   try {
