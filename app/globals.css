@@ -24,3 +24,18 @@ body {
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
 }
+
+/* Kort, selvforsvindende "Gemt ✓"-bekræftelse ved siden af Gem-knapper. */
+@keyframes save-confirmation-fade {
+  0%,
+  70% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.save-confirmation {
+  animation: save-confirmation-fade 2.2s ease-out forwards;
+}

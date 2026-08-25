@@ -5,6 +5,7 @@ import { getDiscountGroups } from "@/lib/discount-groups";
 import { listAddresses } from "@/lib/delivery-addresses";
 import { updateCustomerAction } from "../actions";
 import { PaymentFields } from "../payment-fields";
+import { SaveButton } from "../save-button";
 import {
   updateAddressAction,
   createAddressAction,
@@ -124,13 +125,12 @@ export default async function CustomerDetailPage({
           </label>
         </div>
 
-        <button
-          form={formId}
-          type="submit"
-          className="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632]"
-        >
-          Gem ændringer
-        </button>
+        <SaveButton
+          formId={formId}
+          action={updateCustomerAction}
+          label="Gem ændringer"
+          buttonClassName="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60"
+        />
       </div>
 
       <h2 className="mt-10 mb-1 text-lg font-semibold text-slate-900">
@@ -245,13 +245,7 @@ export default async function CustomerDetailPage({
                       />
                     </td>
                     <td className={cellClass}>
-                      <button
-                        form={addrFormId}
-                        type="submit"
-                        className="rounded-md bg-[#5A9D3C] px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-[#4d8632]"
-                      >
-                        Gem
-                      </button>
+                      <SaveButton formId={addrFormId} action={updateAddressAction} />
                     </td>
                   </tr>
                 );
