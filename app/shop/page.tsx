@@ -60,6 +60,25 @@ export default async function ShopPage() {
           Vælg en afdeling for at se produkterne.
         </p>
 
+        <form
+          action="/shop/katalog"
+          method="GET"
+          className="mb-6 flex max-w-sm gap-2"
+        >
+          <input
+            type="search"
+            name="q"
+            placeholder="Søg på navn eller varenummer…"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+          />
+          <button
+            type="submit"
+            className="shrink-0 rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+          >
+            Søg
+          </button>
+        </form>
+
         {categories.length === 0 ? (
           <p className="text-sm text-slate-500">Ingen afdelinger endnu.</p>
         ) : (

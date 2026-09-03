@@ -41,11 +41,13 @@ function ProductCard({ product }: { product: CatalogProduct }) {
 export function CatalogBrowser({
   categories,
   initialCategoryId = "alle",
+  initialQuery = "",
 }: {
   categories: CatalogCategory[];
   initialCategoryId?: string;
+  initialQuery?: string;
 }) {
-  const [query, setQuery] = useState("");
+  const [query, setQuery] = useState(initialQuery);
   const [categoryId, setCategoryId] = useState(initialCategoryId);
 
   const q = query.trim().toLowerCase();
