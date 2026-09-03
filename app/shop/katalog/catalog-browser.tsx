@@ -4,7 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { CatalogCategory, CatalogProduct } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
-import { ProductImage } from "./product-image";
+import { ProductImage } from "../product-image";
 
 const inputClass =
   "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
@@ -40,11 +40,13 @@ function ProductCard({ product }: { product: CatalogProduct }) {
 
 export function CatalogBrowser({
   categories,
+  initialCategoryId = "alle",
 }: {
   categories: CatalogCategory[];
+  initialCategoryId?: string;
 }) {
   const [query, setQuery] = useState("");
-  const [categoryId, setCategoryId] = useState("alle");
+  const [categoryId, setCategoryId] = useState(initialCategoryId);
 
   const q = query.trim().toLowerCase();
 

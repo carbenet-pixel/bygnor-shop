@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductDetail } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
-import { ProductImage } from "../product-image";
+import { ProductImage } from "../../product-image";
 
 export const dynamic = "force-dynamic";
 

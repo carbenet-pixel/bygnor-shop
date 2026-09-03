@@ -97,6 +97,61 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
     .filter((c) => c.groups.length > 0);
 }
 
+export type CategoryOverviewItem = {
+  id: string;
+  name: string;
+  imageUrl: string | null;
+};
+
+/**
+ * Afdelings-oversigt til /shop. Billedprioritet: categories.image_url
+ * (fremtidig manuel kuratering, se migration 0009) → første produkt i
+ * afdelingen (alfabetisk) med et sat image_url → null (viser fallback-
+ * placeholder i UI'et).
+ */
+export async function getCategoryOverview(): Promise<CategoryOverviewItem[]> {
+  const supabase = await createClient();
+
+  const [
+    { data: categories, error: categoriesError },
+    { data: groups },
+    { data: products },
+  ] = await Promise.all([
+    supabase.from("categories").select("id, name, image_url").order("name"),
+    supabase.from("product_groups").select("id, category_id"),
+    supabase
+      .from("products")
+      .select("product_group_id, image_url")
+      .not("image_url", "is", null)
+      .order("name"),
+  ]);
+
+  if (categoriesError || !categories) {
+    console.error("[getCategoryOverview] categories", categoriesError);
+    return [];
+  }
+
+  const categoryIdByGroup = new Map(
+    (groups ?? []).map((g) => [g.id as string, g.category_id as string]),
+  );
+
+  const fallbackImageByCategory = new Map<string, string>();
+  for (const p of products ?? []) {
+    const categoryId = categoryIdByGroup.get(p.product_group_id as string);
+    if (!categoryId || fallbackImageByCategory.has(categoryId)) continue;
+    fallbackImageByCategory.set(categoryId, p.image_url as string);
+  }
+
+  return categories.map((c) => ({
+    id: c.id as string,
+    name: c.name as string,
+    imageUrl:
+      (c.image_url as string | null) ??
+      fallbackImageByCategory.get(c.id as string) ??
+      null,
+  }));
+}
+
 export type ProductDetail = CatalogProduct & {
   description: string | null;
   categoryName: string;

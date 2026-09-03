@@ -4,8 +4,18 @@ import { CatalogBrowser } from "./catalog-browser";
 
 export const dynamic = "force-dynamic";
 
-export default async function CatalogPage() {
-  const categories = await listCatalog();
+export default async function CatalogPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ avdeling?: string }>;
+}) {
+  const [{ avdeling }, categories] = await Promise.all([
+    searchParams,
+    listCatalog(),
+  ]);
+
+  const initialCategoryId =
+    avdeling && categories.some((c) => c.id === avdeling) ? avdeling : "alle";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -23,7 +33,7 @@ export default async function CatalogPage() {
         Gennemse Bygnors produkter.
       </p>
 
-      <CatalogBrowser categories={categories} />
+      <CatalogBrowser categories={categories} initialCategoryId={initialCategoryId} />
     </div>
   );
 }
