@@ -47,8 +47,15 @@ export default async function ShopPage() {
             Velkommen til Bygnors ordreportal
           </h1>
           <p className="mb-6 text-sm text-slate-500">
-            Kataloget er på vej — vi bygger det til dig.
+            Gennemse Bygnors produktkatalog.
           </p>
+
+          <Link
+            href="/shop/katalog"
+            className="mb-3 block w-full rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+          >
+            Se katalog
+          </Link>
 
           <form action={logout}>
             <button
