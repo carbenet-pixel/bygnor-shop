@@ -5,7 +5,7 @@ import { getDiscountGroups } from "@/lib/discount-groups";
 import { listAddresses } from "@/lib/delivery-addresses";
 import { updateCustomerAction } from "../actions";
 import { PaymentFields } from "../payment-fields";
-import { SaveButton } from "../save-button";
+import { SaveButton } from "@/app/admin/save-button";
 import {
   updateAddressAction,
   createAddressAction,

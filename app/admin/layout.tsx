@@ -7,6 +7,7 @@ import { logout } from "@/lib/supabase/actions";
 const navItems = [
   { href: "/admin/customers", label: "Kunder" },
   { href: "/admin/customers/new", label: "Opret kunde" },
+  { href: "/admin/products", label: "Produkter" },
 ];
 
 export default async function AdminLayout({
@@ -22,7 +23,12 @@ export default async function AdminLayout({
 
   const items =
     role === "superadmin"
-      ? [...navItems, { href: "/admin/discount-groups", label: "Rabatgrupper" }]
+      ? [
+          ...navItems,
+          { href: "/admin/discount-groups", label: "Rabatgrupper" },
+          { href: "/admin/categories", label: "Kategorier" },
+          { href: "/admin/product-groups", label: "Produktgrupper" },
+        ]
       : navItems;
 
   return (

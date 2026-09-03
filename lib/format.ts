@@ -9,3 +9,17 @@ export function formatPrice(price: number | null): string {
     currency: "DKK",
   }).format(price);
 }
+
+const COMBINING_DIACRITICS = new RegExp("[̀-ͯ]", "g");
+
+export function slugify(input: string): string {
+  return input
+    .toLowerCase()
+    .replace(/æ/g, "ae")
+    .replace(/ø/g, "oe")
+    .replace(/å/g, "aa")
+    .normalize("NFD")
+    .replace(COMBINING_DIACRITICS, "")
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
+}

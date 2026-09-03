@@ -79,7 +79,9 @@ export async function proxy(request: NextRequest) {
 
     if (
       pathname.startsWith("/admin/users") ||
-      pathname.startsWith("/admin/discount-groups")
+      pathname.startsWith("/admin/discount-groups") ||
+      pathname.startsWith("/admin/categories") ||
+      pathname.startsWith("/admin/product-groups")
     ) {
       if (role !== "superadmin") {
         return NextResponse.redirect(new URL("/shop", request.url));
