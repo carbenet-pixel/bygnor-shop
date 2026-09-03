@@ -156,6 +156,7 @@ export type ProductDetail = CatalogProduct & {
   description: string | null;
   categoryName: string;
   productGroupName: string;
+  vendorName: string;
 };
 
 export async function getProductDetail(
@@ -166,7 +167,7 @@ export async function getProductDetail(
   const { data: product, error } = await supabase
     .from("products")
     .select(
-      "id, sku, name, description, base_price, image_url, product_group_id, product_groups(name, categories(name))",
+      "id, sku, name, description, base_price, image_url, product_group_id, product_groups(name, categories(name)), vendors(name)",
     )
     .eq("id", id)
     .single();
@@ -179,6 +180,7 @@ export async function getProductDetail(
     name: string;
     categories: { name: string } | null;
   } | null;
+  const vendor = product.vendors as unknown as { name: string } | null;
 
   const { data: siblingRows } = await supabase
     .from("products")
@@ -193,6 +195,7 @@ export async function getProductDetail(
       description: product.description as string | null,
       categoryName: group?.categories?.name ?? "",
       productGroupName: group?.name ?? "",
+      vendorName: vendor?.name ?? "",
     },
     siblings: (siblingRows ?? []).map((row) => toCatalogProduct(row)),
   };

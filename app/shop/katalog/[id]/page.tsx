@@ -47,6 +47,7 @@ export default async function ProductDetailPage({
           </h1>
           <p className="mb-4 text-sm text-slate-500">
             Varenr. {product.sku}
+            {product.vendorName ? ` · Leverandør: ${product.vendorName}` : ""}
           </p>
 
           {product.description && (
