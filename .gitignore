@@ -36,6 +36,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# fase 3: rå kildedata til produktimport (CSV'er + billeder), allerede importeret til Supabase
+/import/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
