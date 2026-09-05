@@ -4,6 +4,7 @@ import { formatPrice } from "@/lib/format";
 import { ProductImage } from "../product-image";
 import { SaveButton } from "@/components/save-button";
 import { updateCartItemAction, removeCartItemAction } from "./actions";
+import { CheckoutButton } from "./checkout-button";
 
 export const dynamic = "force-dynamic";
 
@@ -160,14 +161,10 @@ export default async function CartPage() {
           </p>
         )}
 
-        <button
-          type="button"
-          disabled
-          title="Betaling kommer snart"
-          className="mt-4 w-full cursor-not-allowed rounded-md bg-slate-300 px-4 py-2 text-sm font-semibold text-slate-500 sm:w-auto"
-        >
-          Betaling kommer snart
-        </button>
+        <CheckoutButton />
+        <p className="mt-2 text-xs text-slate-400">
+          Betaling med faktura kommer snart — kun kort er muligt lige nu.
+        </p>
       </div>
     </div>
   );
