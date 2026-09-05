@@ -31,6 +31,21 @@ export default async function ReceiptPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 text-center">
+      {order.status === "afventer" && (
+        <>
+          <h1 className="mb-2 text-xl font-semibold text-slate-900">
+            Ordre modtaget
+          </h1>
+          <p className="mb-6 text-sm text-slate-500">
+            Din ordre er registreret med faktura som betalingsmetode
+            {order.total_amount != null
+              ? ` for ${formatPrice(order.total_amount)}`
+              : ""}
+            . Vores salgsafdeling kontakter dig snarest.
+          </p>
+        </>
+      )}
+
       {order.status === "afventer_betaling" && (
         <>
           <h1 className="mb-2 text-xl font-semibold text-slate-900">

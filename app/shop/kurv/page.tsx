@@ -1,17 +1,19 @@
 import Link from "next/link";
 import { getCart } from "@/lib/cart";
+import { isInvoiceApproved } from "@/lib/checkout";
 import { formatPrice } from "@/lib/format";
 import { ProductImage } from "../product-image";
 import { SaveButton } from "@/components/save-button";
 import { updateCartItemAction, removeCartItemAction } from "./actions";
 import { CheckoutButton } from "./checkout-button";
+import { InvoiceCheckoutButton } from "./invoice-checkout-button";
 
 export const dynamic = "force-dynamic";
 
 const cellClass = "px-4 py-3 align-middle";
 
 export default async function CartPage() {
-  const cart = await getCart();
+  const [cart, invoiceApproved] = await Promise.all([getCart(), isInvoiceApproved()]);
 
   if (cart.items.length === 0) {
     return (
@@ -162,9 +164,14 @@ export default async function CartPage() {
         )}
 
         <CheckoutButton />
-        <p className="mt-2 text-xs text-slate-400">
-          Betaling med faktura kommer snart — kun kort er muligt lige nu.
-        </p>
+        {invoiceApproved ? (
+          <InvoiceCheckoutButton />
+        ) : (
+          <p className="mt-2 text-xs text-slate-400">
+            Din konto er ikke godkendt til fakturabetaling — kontakt Bygnor
+            hvis I ønsker det.
+          </p>
+        )}
       </div>
     </div>
   );

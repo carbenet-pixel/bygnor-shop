@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyChecksum } from "@/lib/quickpay";
+import { sendOrderConfirmation } from "@/lib/order-mail";
 
 type QuickpayCallbackPayload = {
   order_id?: string;
@@ -82,6 +83,9 @@ export async function POST(request: NextRequest) {
     if (cart) {
       await supabaseAdmin.from("cart_items").delete().eq("cart_id", cart.id);
     }
+
+    // Sendes først nu — betalingen er reelt bekræftet, ikke bare igangsat.
+    await sendOrderConfirmation(order.id);
   } else if (payload.accepted === false) {
     await supabaseAdmin.from("orders").update({ status: "betaling_fejlet" }).eq("id", order.id);
   }
