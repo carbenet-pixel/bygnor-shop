@@ -5,6 +5,7 @@ import { getUserRole } from "@/lib/supabase/get-user-role";
 import { logout } from "@/lib/supabase/actions";
 
 const navItems = [
+  { href: "/admin/orders", label: "Ordrer" },
   { href: "/admin/customers", label: "Kunder" },
   { href: "/admin/customers/new", label: "Opret kunde" },
   { href: "/admin/products", label: "Produkter" },

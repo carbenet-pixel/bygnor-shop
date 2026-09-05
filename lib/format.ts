@@ -10,6 +10,13 @@ export function formatPrice(price: number | null): string {
   }).format(price);
 }
 
+export function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat("da-DK", {
+    dateStyle: "short",
+    timeStyle: "short",
+  }).format(new Date(iso));
+}
+
 const COMBINING_DIACRITICS = new RegExp("[̀-ͯ]", "g");
 
 export function slugify(input: string): string {
