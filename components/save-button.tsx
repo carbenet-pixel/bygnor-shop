@@ -12,7 +12,7 @@ const initialState: SaveButtonState = { savedAt: 0 };
  * Bruger `formAction` (ikke formularens egen `action`) til at hægte
  * useActionState på — virker derfor uændret sammen med det eksisterende
  * `form={formId}`-mønster, uden at røre selve formularerne eller de
- * underliggende server actions.
+ * underliggende server actions. Delt mellem /admin og /shop.
  */
 export function SaveButton({
   formId,

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { listProductGroupsAdmin } from "@/lib/product-groups";
 import { listCategoriesAdmin } from "@/lib/categories";
-import { SaveButton } from "@/app/admin/save-button";
+import { SaveButton } from "@/components/save-button";
 import { updateProductGroupAction } from "./actions";
 
 export const dynamic = "force-dynamic";

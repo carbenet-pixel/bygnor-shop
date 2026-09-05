@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { listCategoriesAdmin } from "@/lib/categories";
 import { ProductImage } from "@/app/shop/product-image";
-import { SaveButton } from "@/app/admin/save-button";
+import { SaveButton } from "@/components/save-button";
 import { updateCategoryAction } from "./actions";
 
 export const dynamic = "force-dynamic";

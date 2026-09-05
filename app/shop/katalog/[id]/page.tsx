@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { getProductDetail } from "@/lib/catalog";
 import { formatPrice } from "@/lib/format";
 import { ProductImage } from "../../product-image";
+import { AddToCartForm } from "./add-to-cart-form";
 
 export const dynamic = "force-dynamic";
 
@@ -66,7 +67,7 @@ export default async function ProductDetailPage({
             >
               {formatPrice(product.basePrice)}
             </span>
-            {/* Reserveret plads til "Læg i kurv"-knap — tilføjes i Fase 4 */}
+            <AddToCartForm productId={product.id} />
           </div>
         </div>
       </div>

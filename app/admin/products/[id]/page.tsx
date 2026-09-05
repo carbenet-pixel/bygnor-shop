@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { getProductAdmin, STOCK_STATUS_OPTIONS } from "@/lib/products-admin";
 import { listProductGroupsAdmin } from "@/lib/product-groups";
 import { listVendors } from "@/lib/vendors";
-import { SaveButton } from "@/app/admin/save-button";
+import { SaveButton } from "@/components/save-button";
 import { updateProductAction } from "../actions";
 import { ProductImageUploadForm } from "./product-image-upload-form";
 
