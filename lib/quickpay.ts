@@ -12,7 +12,7 @@ const SITE_URL = "https://bygnor-shop.vercel.app";
 // agreement id skal ikke sendes med i selve API-kaldene.
 
 function getApiKey(): string {
-  const key = process.env.QUICKPAY_PAYMENT_WINDOW_API_KEY;
+  const key = process.env.QUICKPAY_PAYMENT_WINDOW_API_KEY?.trim();
   if (!key) {
     throw new Error("[quickpay] QUICKPAY_PAYMENT_WINDOW_API_KEY er ikke sat");
   }
@@ -92,7 +92,7 @@ export async function createPaymentAndLink(
 export function verifyChecksum(rawBody: string, checksumHeader: string | null): boolean {
   if (!checksumHeader) return false;
 
-  const privateKey = process.env.QUICKPAY_PRIVATE_KEY;
+  const privateKey = process.env.QUICKPAY_PRIVATE_KEY?.trim();
   if (!privateKey) {
     console.error("[quickpay] QUICKPAY_PRIVATE_KEY er ikke sat");
     return false;
