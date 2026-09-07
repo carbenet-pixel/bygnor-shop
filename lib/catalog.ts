@@ -23,6 +23,27 @@ export type CatalogCategory = {
   groups: CatalogGroup[];
 };
 
+/**
+ * Pido viser selv kun ét billede pr. produktgruppe i deres katalog, ikke
+ * ét pr. varenummer — vi stillede tidligere et strengere krav. Beregnet
+ * ved opslag (produktets eget image_url ændres IKKE i databasen), så et
+ * senere Pido-billede for et specifikt varenummer automatisk tager over
+ * uden oprydning. "rows" behøver ikke være udtømmende for alle grupper —
+ * kald med ekstra kandidat-rækker hvis den viste mængde ikke selv dækker
+ * hele gruppen (se lib/cart.ts / lib/products-admin.ts).
+ */
+export function buildGroupImageFallbackMap(
+  rows: { productGroupId: string; imageUrl: string | null }[],
+): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const row of rows) {
+    if (row.imageUrl && !map.has(row.productGroupId)) {
+      map.set(row.productGroupId, row.imageUrl);
+    }
+  }
+  return map;
+}
+
 function toCatalogProduct(row: Record<string, unknown>): CatalogProduct {
   return {
     id: row.id as string,
@@ -73,9 +94,21 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
     return [];
   }
 
+  // Alle produkter er allerede hentet her, så kortet dækker hele kataloget
+  // — ingen ekstra forespørgsel nødvendig for at finde et billede at arve.
+  const fallbackImageByGroup = buildGroupImageFallbackMap(
+    products.map((row) => ({
+      productGroupId: row.product_group_id as string,
+      imageUrl: row.image_url as string | null,
+    })),
+  );
+
   const productsByGroup = new Map<string, CatalogProduct[]>();
   for (const row of products) {
     const product = toCatalogProduct(row);
+    if (!product.imageUrl) {
+      product.imageUrl = fallbackImageByGroup.get(product.productGroupId) ?? null;
+    }
     const list = productsByGroup.get(product.productGroupId) ?? [];
     list.push(product);
     productsByGroup.set(product.productGroupId, list);
@@ -191,14 +224,35 @@ export async function getProductDetail(
     .neq("id", id)
     .order("name");
 
+  const mainProduct = toCatalogProduct(product as Record<string, unknown>);
+  const siblingProducts = (siblingRows ?? []).map((row) => toCatalogProduct(row));
+
+  // Produktet selv + alle søskende UDGØR hele produktgruppen, så kortet er
+  // fuldstændigt — ingen ekstra forespørgsel nødvendig.
+  const fallbackImageByGroup = buildGroupImageFallbackMap(
+    [mainProduct, ...siblingProducts].map((p) => ({
+      productGroupId: p.productGroupId,
+      imageUrl: p.imageUrl,
+    })),
+  );
+
+  if (!mainProduct.imageUrl) {
+    mainProduct.imageUrl = fallbackImageByGroup.get(mainProduct.productGroupId) ?? null;
+  }
+  for (const sibling of siblingProducts) {
+    if (!sibling.imageUrl) {
+      sibling.imageUrl = fallbackImageByGroup.get(sibling.productGroupId) ?? null;
+    }
+  }
+
   return {
     product: {
-      ...toCatalogProduct(product as Record<string, unknown>),
+      ...mainProduct,
       description: product.description as string | null,
       categoryName: group?.categories?.name ?? "",
       productGroupName: group?.name ?? "",
       vendorName: vendor?.name ?? "",
     },
-    siblings: (siblingRows ?? []).map((row) => toCatalogProduct(row)),
+    siblings: siblingProducts,
   };
 }

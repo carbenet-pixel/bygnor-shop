@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { buildGroupImageFallbackMap } from "@/lib/catalog";
 
 export type CartItem = {
   id: string;
@@ -64,6 +65,35 @@ export async function getCartItemCount(): Promise<number> {
   return data.reduce((sum, row) => sum + (row.quantity as number), 0);
 }
 
+/**
+ * Kurven indeholder typisk kun få af gruppens produkter, så modsat
+ * lib/catalog.ts's listCatalog() dækker de allerede hentede rækker ikke
+ * nødvendigvis hele gruppen — hent billede-kandidater fra resten af
+ * gruppen direkte, til brug for "arv billede fra produktgruppe".
+ */
+async function getGroupImageFallbackCandidates(
+  supabase: SupabaseServerClient,
+  groupIds: string[],
+): Promise<{ productGroupId: string; imageUrl: string | null }[]> {
+  if (groupIds.length === 0) return [];
+
+  const { data, error } = await supabase
+    .from("products")
+    .select("product_group_id, image_url")
+    .in("product_group_id", groupIds)
+    .not("image_url", "is", null);
+
+  if (error || !data) {
+    console.error("[getGroupImageFallbackCandidates]", error);
+    return [];
+  }
+
+  return data.map((row) => ({
+    productGroupId: row.product_group_id as string,
+    imageUrl: row.image_url as string | null,
+  }));
+}
+
 export async function getCart(): Promise<Cart> {
   const supabase = await createClient();
   const userId = await getCurrentUserId(supabase);
@@ -74,7 +104,9 @@ export async function getCart(): Promise<Cart> {
 
   const { data, error } = await supabase
     .from("cart_items")
-    .select("id, product_id, quantity, products(sku, name, name_da, image_url, base_price)")
+    .select(
+      "id, product_id, quantity, products(sku, name, name_da, image_url, base_price, product_group_id)",
+    )
     .eq("cart_id", cartId)
     .order("created_at");
 
@@ -83,28 +115,44 @@ export async function getCart(): Promise<Cart> {
     return { id: cartId, items: [] };
   }
 
+  type RawProduct = {
+    sku: string;
+    name: string;
+    name_da: string | null;
+    image_url: string | null;
+    base_price: number | null;
+    product_group_id: string;
+  };
+
+  const rows = data.map((row) => ({
+    row,
+    product: row.products as unknown as RawProduct | null,
+  }));
+
+  const groupIds = [
+    ...new Set(
+      rows
+        .map(({ product }) => product?.product_group_id)
+        .filter((v): v is string => Boolean(v)),
+    ),
+  ];
+  const candidates = await getGroupImageFallbackCandidates(supabase, groupIds);
+  const fallbackImageByGroup = buildGroupImageFallbackMap(candidates);
+
   return {
     id: cartId,
-    items: data.map((row) => {
-      const product = row.products as unknown as {
-        sku: string;
-        name: string;
-        name_da: string | null;
-        image_url: string | null;
-        base_price: number | null;
-      } | null;
-
-      return {
-        id: row.id as string,
-        productId: row.product_id as string,
-        sku: product?.sku ?? "",
-        name: product?.name ?? "",
-        nameDa: product?.name_da ?? null,
-        imageUrl: product?.image_url ?? null,
-        basePrice: product?.base_price ?? null,
-        quantity: row.quantity as number,
-      };
-    }),
+    items: rows.map(({ row, product }) => ({
+      id: row.id as string,
+      productId: row.product_id as string,
+      sku: product?.sku ?? "",
+      name: product?.name ?? "",
+      nameDa: product?.name_da ?? null,
+      imageUrl:
+        product?.image_url ??
+        (product ? (fallbackImageByGroup.get(product.product_group_id) ?? null) : null),
+      basePrice: product?.base_price ?? null,
+      quantity: row.quantity as number,
+    })),
   };
 }
 
