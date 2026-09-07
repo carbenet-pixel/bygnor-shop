@@ -12,6 +12,7 @@ export type CustomerListItem = {
   discountGroupName: string;
   individualDiscount: number | null;
   isActive: boolean;
+  invoiceApproved: boolean;
 };
 
 export async function listCustomers(): Promise<CustomerListItem[]> {
@@ -22,7 +23,7 @@ export async function listCustomers(): Promise<CustomerListItem[]> {
       supabaseAdmin
         .from("profiles")
         .select(
-          "id, company_name, payment_method, credit_limit, payment_terms_days, discount_group, individual_discount, is_active",
+          "id, company_name, payment_method, credit_limit, payment_terms_days, discount_group, individual_discount, is_active, invoice_approved",
         )
         .eq("role", "kunde")
         .order("company_name", { ascending: true }),
@@ -58,6 +59,7 @@ export async function listCustomers(): Promise<CustomerListItem[]> {
       groupNameById.get(p.discount_group as string) ?? (p.discount_group as string),
     individualDiscount: p.individual_discount as number | null,
     isActive: p.is_active as boolean,
+    invoiceApproved: p.invoice_approved as boolean,
   }));
 }
 
@@ -78,7 +80,7 @@ export async function getCustomer(id: string): Promise<CustomerDetail | null> {
       supabaseAdmin
         .from("profiles")
         .select(
-          "id, role, company_name, payment_method, credit_limit, payment_terms_days, discount_group, individual_discount, is_active",
+          "id, role, company_name, payment_method, credit_limit, payment_terms_days, discount_group, individual_discount, is_active, invoice_approved",
         )
         .eq("id", id)
         .single(),
@@ -107,6 +109,7 @@ export async function getCustomer(id: string): Promise<CustomerDetail | null> {
       (profile.discount_group as string),
     individualDiscount: profile.individual_discount as number | null,
     isActive: profile.is_active as boolean,
+    invoiceApproved: profile.invoice_approved as boolean,
   };
 }
 
@@ -115,6 +118,7 @@ export type UpdateCustomerInput = {
   discountGroup: string;
   individualDiscount: number | null;
   isActive: boolean;
+  invoiceApproved: boolean;
   paymentMethod: string;
   creditLimit: number | null;
   paymentTermsDays: number | null;
@@ -130,7 +134,10 @@ export async function updateCustomer(
     .select("id");
   const validGroupIds = new Set((groups ?? []).map((g) => g.id as string));
 
-  const update: Record<string, unknown> = { is_active: input.isActive };
+  const update: Record<string, unknown> = {
+    is_active: input.isActive,
+    invoice_approved: input.invoiceApproved,
+  };
 
   if (validGroupIds.has(input.discountGroup)) {
     update.discount_group = input.discountGroup;

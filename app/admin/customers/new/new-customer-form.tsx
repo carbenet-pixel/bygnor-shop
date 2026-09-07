@@ -292,6 +292,21 @@ export function NewCustomerForm({
             </div>
           </div>
         )}
+
+        <div className="flex items-center gap-2">
+          <input
+            id="invoiceApproved"
+            type="checkbox"
+            name="invoiceApproved"
+            className="h-4 w-4"
+          />
+          <label
+            htmlFor="invoiceApproved"
+            className="text-sm font-medium text-slate-700"
+          >
+            Godkendt til fakturabetaling
+          </label>
+        </div>
       </section>
 
       <button

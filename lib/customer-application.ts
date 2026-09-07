@@ -30,6 +30,7 @@ type CustomerAccountDetails = {
   expectedAnnualVolume: string | null;
   existingCustomer: boolean;
   applicationComment: string | null;
+  invoiceApproved: boolean;
   createdBy: "self_service" | "admin";
   termsAcceptedAt: string | null;
   privacyAcceptedAt: string | null;
@@ -120,6 +121,7 @@ async function createCustomerAccount(
         expected_annual_volume: details.expectedAnnualVolume,
         existing_customer: details.existingCustomer,
         application_comment: details.applicationComment,
+        invoice_approved: details.invoiceApproved,
         terms_accepted_at: details.termsAcceptedAt,
         privacy_accepted_at: details.privacyAcceptedAt,
       })
@@ -270,6 +272,9 @@ export async function applyForAccount(
     expectedAnnualVolume: expectedAnnualVolume || null,
     existingCustomer: existingCustomer ?? false,
     applicationComment: applicationComment || null,
+    // Selvbetjening kan aldrig selv slå fakturagodkendelse til — det er
+    // udelukkende noget admin/superadmin sætter manuelt, jf. kunde-admin.
+    invoiceApproved: false,
     createdBy: "self_service",
     termsAcceptedAt: acceptedAt,
     privacyAcceptedAt: acceptedAt,
@@ -332,6 +337,7 @@ export type AdminCreateCustomerInput = {
   individualDiscount?: number;
   creditLimit?: number;
   paymentTermsDays?: number;
+  invoiceApproved?: boolean;
 };
 
 export type AdminCreateCustomerErrorCode =
@@ -363,6 +369,7 @@ export async function createCustomerAsAdmin(
     individualDiscount,
     creditLimit,
     paymentTermsDays,
+    invoiceApproved,
   } = input;
 
   if (
@@ -426,6 +433,7 @@ export async function createCustomerAsAdmin(
     expectedAnnualVolume: null,
     existingCustomer: false,
     applicationComment: null,
+    invoiceApproved: invoiceApproved ?? false,
     createdBy: "admin",
     termsAcceptedAt: null,
     privacyAcceptedAt: null,

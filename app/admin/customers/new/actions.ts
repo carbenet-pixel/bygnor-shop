@@ -40,6 +40,7 @@ export async function createCustomer(
     individualDiscount: parseOptionalNumber(formData.get("individualDiscount")),
     creditLimit: parseOptionalNumber(formData.get("creditLimit")),
     paymentTermsDays: parseOptionalNumber(formData.get("paymentTermsDays")),
+    invoiceApproved: formData.get("invoiceApproved") === "on",
   });
 
   if (!result.success) {

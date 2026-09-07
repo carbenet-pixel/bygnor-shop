@@ -36,6 +36,7 @@ export default async function AdminCustomersPage() {
                 <th className={cellClass}>Rabatgruppe</th>
                 <th className={cellClass}>Individuel rabat</th>
                 <th className={cellClass}>Aktiv</th>
+                <th className={cellClass}>Faktura</th>
                 <th className={cellClass}></th>
               </tr>
             </thead>
@@ -105,6 +106,13 @@ export default async function AdminCustomersPage() {
                         defaultChecked={customer.isActive}
                         className="h-4 w-4"
                       />
+                    </td>
+                    <td className={cellClass}>
+                      {customer.invoiceApproved && (
+                        <span className="rounded-full bg-blue-100 px-2 py-0.5 text-xs font-medium text-blue-700">
+                          Faktura
+                        </span>
+                      )}
                     </td>
                     <td className={cellClass}>
                       <button

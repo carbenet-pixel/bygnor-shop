@@ -13,6 +13,7 @@ export async function updateCustomerAction(formData: FormData) {
   const customerId = formData.get("customerId") as string;
   const discountGroup = ((formData.get("discountGroup") as string) ?? "").trim();
   const isActive = formData.get("isActive") === "on";
+  const invoiceApproved = formData.get("invoiceApproved") === "on";
   const paymentMethod = ((formData.get("paymentMethod") as string) ?? "").trim();
 
   if (!customerId || !discountGroup) return;
@@ -22,6 +23,7 @@ export async function updateCustomerAction(formData: FormData) {
     discountGroup,
     individualDiscount: parseOptionalNumber(formData.get("individualDiscount")),
     isActive,
+    invoiceApproved,
     paymentMethod,
     creditLimit: parseOptionalNumber(formData.get("creditLimit")),
     paymentTermsDays: parseOptionalNumber(formData.get("paymentTermsDays")),

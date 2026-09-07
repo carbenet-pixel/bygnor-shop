@@ -125,6 +125,23 @@ export default async function CustomerDetailPage({
           </label>
         </div>
 
+        <div className="flex items-center gap-2">
+          <input
+            form={formId}
+            id="invoiceApproved"
+            type="checkbox"
+            name="invoiceApproved"
+            defaultChecked={customer.invoiceApproved}
+            className="h-4 w-4"
+          />
+          <label
+            htmlFor="invoiceApproved"
+            className="text-sm font-medium text-slate-700"
+          >
+            Godkendt til fakturabetaling
+          </label>
+        </div>
+
         <SaveButton
           formId={formId}
           action={updateCustomerAction}
