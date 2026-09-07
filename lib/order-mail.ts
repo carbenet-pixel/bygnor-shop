@@ -3,10 +3,19 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMail, type MailMessage } from "@/lib/mail";
 import { formatPrice } from "@/lib/format";
 
-// Fast modtager for fakturaordrer — ikke en env-variabel, samme mønster som
-// FROM_ADDRESS i lib/mail.ts (en fast forretningsadresse, ikke noget der
-// forventes konfigureret pr. miljø).
-const SALES_EMAIL = "salg@bygnor.com";
+/**
+ * Modtager for fakturaordrer — konfigureres via miljøvariabel, så den kan
+ * ændres uden en ny deploy. Ingen fallback-værdi: mangler den, skal det
+ * fejle tydeligt i loggen, samme mønster som POSTMARK_SERVER_TOKEN i
+ * lib/mail.ts, ikke stille falde tilbage til en forkert adresse.
+ */
+function getSalesNotificationEmail(): string {
+  const email = process.env.SALES_NOTIFICATION_EMAIL?.trim();
+  if (!email) {
+    throw new Error("[order-mail] SALES_NOTIFICATION_EMAIL er ikke sat");
+  }
+  return email;
+}
 
 type OrderMailItem = {
   name: string;
@@ -144,6 +153,14 @@ export async function sendInvoiceOrderNotification(orderId: string): Promise<voi
   const data = await loadOrderMailData(orderId);
   if (!data) return;
 
+  let salesEmail: string;
+  try {
+    salesEmail = getSalesNotificationEmail();
+  } catch (err) {
+    console.error(`[order-mail] fakturanotifikation ordre=${orderId}: kan ikke sendes`, err);
+    return;
+  }
+
   const subject = `Ny fakturaordre — ${data.companyName ?? "Ukendt kunde"} — ${formatPrice(data.totalAmount)}`;
 
   const body = `Ny ordre med faktura som betalingsmetode.
@@ -161,7 +178,7 @@ ${formatDeliveryAddress(data)}
 Samlet beløb: ${formatPrice(data.totalAmount)}
 `;
 
-  await sendMailWithRetry({ to: [SALES_EMAIL], subject, body }, `fakturanotifikation ordre=${orderId}`);
+  await sendMailWithRetry({ to: [salesEmail], subject, body }, `fakturanotifikation ordre=${orderId}`);
 }
 
 /**
