@@ -5,6 +5,7 @@ export type CatalogProduct = {
   id: string;
   sku: string;
   name: string;
+  nameDa: string | null;
   basePrice: number | null;
   imageUrl: string | null;
   productGroupId: string;
@@ -27,6 +28,7 @@ function toCatalogProduct(row: Record<string, unknown>): CatalogProduct {
     id: row.id as string,
     sku: row.sku as string,
     name: row.name as string,
+    nameDa: row.name_da as string | null,
     basePrice: row.base_price as number | null,
     imageUrl: row.image_url as string | null,
     productGroupId: row.product_group_id as string,
@@ -54,7 +56,7 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
       .order("name"),
     supabase
       .from("products")
-      .select("id, sku, name, base_price, image_url, product_group_id")
+      .select("id, sku, name, name_da, base_price, image_url, product_group_id")
       .order("name"),
   ]);
 
@@ -167,7 +169,7 @@ export async function getProductDetail(
   const { data: product, error } = await supabase
     .from("products")
     .select(
-      "id, sku, name, description, base_price, image_url, product_group_id, product_groups(name, categories(name)), vendors(name)",
+      "id, sku, name, name_da, description, base_price, image_url, product_group_id, product_groups(name, categories(name)), vendors(name)",
     )
     .eq("id", id)
     .single();
@@ -184,7 +186,7 @@ export async function getProductDetail(
 
   const { data: siblingRows } = await supabase
     .from("products")
-    .select("id, sku, name, base_price, image_url, product_group_id")
+    .select("id, sku, name, name_da, base_price, image_url, product_group_id")
     .eq("product_group_id", product.product_group_id as string)
     .neq("id", id)
     .order("name");

@@ -6,6 +6,7 @@ export type CartItem = {
   productId: string;
   sku: string;
   name: string;
+  nameDa: string | null;
   imageUrl: string | null;
   basePrice: number | null;
   quantity: number;
@@ -73,7 +74,7 @@ export async function getCart(): Promise<Cart> {
 
   const { data, error } = await supabase
     .from("cart_items")
-    .select("id, product_id, quantity, products(sku, name, image_url, base_price)")
+    .select("id, product_id, quantity, products(sku, name, name_da, image_url, base_price)")
     .eq("cart_id", cartId)
     .order("created_at");
 
@@ -88,6 +89,7 @@ export async function getCart(): Promise<Cart> {
       const product = row.products as unknown as {
         sku: string;
         name: string;
+        name_da: string | null;
         image_url: string | null;
         base_price: number | null;
       } | null;
@@ -97,6 +99,7 @@ export async function getCart(): Promise<Cart> {
         productId: row.product_id as string,
         sku: product?.sku ?? "",
         name: product?.name ?? "",
+        nameDa: product?.name_da ?? null,
         imageUrl: product?.image_url ?? null,
         basePrice: product?.base_price ?? null,
         quantity: row.quantity as number,

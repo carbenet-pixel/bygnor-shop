@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { listProductsAdmin } from "@/lib/products-admin";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, displayName } from "@/lib/format";
 import { ProductImage } from "@/app/shop/product-image";
 
 export const dynamic = "force-dynamic";
@@ -51,7 +51,7 @@ export default async function AdminProductsPage() {
                   <td className={cellClass}>
                     <ProductImage
                       imageUrl={product.imageUrl}
-                      alt={product.name}
+                      alt={displayName(product)}
                       className="h-12 w-12 rounded-md"
                       sizes="48px"
                     />
@@ -64,7 +64,7 @@ export default async function AdminProductsPage() {
                       href={`/admin/products/${product.id}`}
                       className="hover:text-[#185FA5] hover:underline"
                     >
-                      {product.name}
+                      {displayName(product)}
                     </Link>
                   </td>
                   <td className={`${cellClass} text-slate-500`}>

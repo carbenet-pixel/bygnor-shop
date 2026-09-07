@@ -145,6 +145,7 @@ async function insertOrderItems(
       product_id: item.productId,
       sku_snapshot: item.sku,
       name_snapshot: item.name,
+      name_snapshot_da: item.nameDa,
       base_price_snapshot: item.basePrice,
       unit_price_snapshot:
         item.basePrice != null

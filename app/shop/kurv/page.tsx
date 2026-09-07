@@ -4,7 +4,7 @@ import { getCart } from "@/lib/cart";
 import { isInvoiceApproved } from "@/lib/checkout";
 import { getCustomerDiscount } from "@/lib/discount-groups";
 import { listAddresses } from "@/lib/delivery-addresses";
-import { formatPrice, roundCurrency } from "@/lib/format";
+import { formatPrice, roundCurrency, displayName } from "@/lib/format";
 import { ProductImage } from "../product-image";
 import { SaveButton } from "@/components/save-button";
 import { updateCartItemAction, removeCartItemAction } from "./actions";
@@ -111,7 +111,7 @@ export default async function CartPage() {
                   <td className={cellClass}>
                     <ProductImage
                       imageUrl={item.imageUrl}
-                      alt={item.name}
+                      alt={displayName(item)}
                       className="h-14 w-14 rounded-md"
                       sizes="56px"
                     />
@@ -121,7 +121,7 @@ export default async function CartPage() {
                       href={`/shop/katalog/${item.productId}`}
                       className="font-medium text-slate-900 hover:text-[#185FA5] hover:underline"
                     >
-                      {item.name}
+                      {displayName(item)}
                     </Link>
                     <p className="text-xs text-slate-400">{item.sku}</p>
                   </td>

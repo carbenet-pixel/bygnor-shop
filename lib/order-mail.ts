@@ -19,6 +19,7 @@ function getSalesNotificationEmail(): string {
 
 type OrderMailItem = {
   name: string;
+  nameDa: string | null;
   sku: string;
   quantity: number;
   basePrice: number | null;
@@ -48,7 +49,7 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "order_reference, customer_id, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, discount_label, order_items(name_snapshot, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
+      "order_reference, customer_id, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, discount_label, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
     )
     .eq("id", orderId)
     .single();
@@ -70,6 +71,7 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
   const items = (
     order.order_items as unknown as Array<{
       name_snapshot: string;
+      name_snapshot_da: string | null;
       sku_snapshot: string;
       quantity: number;
       base_price_snapshot: number | null;
@@ -77,6 +79,7 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
     }>
   ).map((row) => ({
     name: row.name_snapshot,
+    nameDa: row.name_snapshot_da,
     sku: row.sku_snapshot,
     quantity: row.quantity,
     basePrice: row.base_price_snapshot,
@@ -101,9 +104,17 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
   };
 }
 
-function formatItemsList(items: OrderMailItem[]): string {
+/**
+ * "sv" (Pidos oprindelige varenavn) bruges KUN til fakturanotifikationen
+ * til salg — det er arbejdsinstruktionen til manuel bestilling hos Pido,
+ * og en oversættelse her øger risikoen for fejlbestilling. "da" (med
+ * fallback til navnet, hvis en dansk oversættelse mangler) bruges alle
+ * andre steder, inkl. kundens egen ordrebekræftelse.
+ */
+function formatItemsList(items: OrderMailItem[], language: "sv" | "da"): string {
   return items
     .map((item) => {
+      const name = language === "da" ? (item.nameDa ?? item.name) : item.name;
       const normalPriceText = formatPrice(item.basePrice);
       const unitPriceText = formatPrice(item.unitPrice);
       const lineRabat =
@@ -115,7 +126,7 @@ function formatItemsList(items: OrderMailItem[]): string {
         item.unitPrice != null
           ? formatPrice(item.unitPrice * item.quantity)
           : "Pris oplyses snarest";
-      return `- ${item.name} (${item.sku}) · ${item.quantity} stk · Normalpris: ${normalPriceText}/stk${rabatText} · Pris: ${unitPriceText}/stk · Linjesum: ${lineTotalText}`;
+      return `- ${name} (${item.sku}) · ${item.quantity} stk · Normalpris: ${normalPriceText}/stk${rabatText} · Pris: ${unitPriceText}/stk · Linjesum: ${lineTotalText}`;
     })
     .join("\n");
 }
@@ -200,8 +211,8 @@ Kunde: ${data.companyName ?? "Ukendt"}${data.cvrNumber ? ` (CVR ${data.cvrNumber
 Kundens email: ${data.customerEmail ?? "ukendt"}
 Ordrereference: ${data.orderReference ?? "ukendt"}
 
-Ordrelinjer:
-${formatItemsList(data.items)}
+Ordrelinjer (varenavne som hos Pido, til bestilling):
+${formatItemsList(data.items, "sv")}
 
 Leveringsadresse:
 ${formatDeliveryAddress(data)}
@@ -238,7 +249,7 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
 Ordrereference: ${data.orderReference ?? "ukendt"}
 
 Ordrelinjer:
-${formatItemsList(data.items)}
+${formatItemsList(data.items, "da")}
 
 Leveringsadresse:
 ${formatDeliveryAddress(data)}

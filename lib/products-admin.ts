@@ -8,6 +8,7 @@ export type ProductAdminListItem = {
   id: string;
   sku: string;
   name: string;
+  nameDa: string | null;
   categoryName: string;
   productGroupName: string;
   basePrice: number | null;
@@ -21,7 +22,7 @@ export async function listProductsAdmin(): Promise<ProductAdminListItem[]> {
   const { data, error } = await supabaseAdmin
     .from("products")
     .select(
-      "id, sku, name, base_price, image_url, active, product_groups(name, categories(name))",
+      "id, sku, name, name_da, base_price, image_url, active, product_groups(name, categories(name))",
     )
     .order("sku");
 
@@ -40,6 +41,7 @@ export async function listProductsAdmin(): Promise<ProductAdminListItem[]> {
       id: row.id as string,
       sku: row.sku as string,
       name: row.name as string,
+      nameDa: row.name_da as string | null,
       categoryName: group?.categories?.name ?? "—",
       productGroupName: group?.name ?? "—",
       basePrice: row.base_price as number | null,
@@ -53,6 +55,7 @@ export type ProductAdminDetail = {
   id: string;
   sku: string;
   name: string;
+  nameDa: string | null;
   description: string | null;
   productGroupId: string;
   vendorId: string;
@@ -71,7 +74,7 @@ export async function getProductAdmin(id: string): Promise<ProductAdminDetail | 
   const { data, error } = await supabaseAdmin
     .from("products")
     .select(
-      "id, sku, name, description, product_group_id, vendor_id, catalog_page, base_price, vat_rate, stock_status, lead_time_days, image_url, active",
+      "id, sku, name, name_da, description, product_group_id, vendor_id, catalog_page, base_price, vat_rate, stock_status, lead_time_days, image_url, active",
     )
     .eq("id", id)
     .single();
@@ -84,6 +87,7 @@ export async function getProductAdmin(id: string): Promise<ProductAdminDetail | 
     id: data.id as string,
     sku: data.sku as string,
     name: data.name as string,
+    nameDa: data.name_da as string | null,
     description: data.description as string | null,
     productGroupId: data.product_group_id as string,
     vendorId: data.vendor_id as string,

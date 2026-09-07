@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductDetail } from "@/lib/catalog";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, displayName } from "@/lib/format";
 import { ProductImage } from "../../product-image";
 import { AddToCartForm } from "./add-to-cart-form";
 
@@ -33,7 +33,7 @@ export default async function ProductDetailPage({
       <div className="grid gap-8 md:grid-cols-2">
         <ProductImage
           imageUrl={product.imageUrl}
-          alt={product.name}
+          alt={displayName(product)}
           className="aspect-square rounded-xl border border-slate-200"
           sizes="(max-width: 768px) 100vw, 480px"
         />
@@ -44,7 +44,7 @@ export default async function ProductDetailPage({
             {product.productGroupName ? ` / ${product.productGroupName}` : ""}
           </p>
           <h1 className="mt-1 mb-1 text-xl font-semibold text-slate-900">
-            {product.name}
+            {displayName(product)}
           </h1>
           <p className="mb-4 text-sm text-slate-500">
             Varenr. {product.sku}
@@ -84,7 +84,7 @@ export default async function ProductDetailPage({
                 href={`/shop/katalog/${sibling.id}`}
                 className="rounded-md border border-slate-300 bg-white px-3 py-1.5 text-sm text-slate-700 hover:border-[#185FA5] hover:text-[#185FA5]"
               >
-                {sibling.name}
+                {displayName(sibling)}
               </Link>
             ))}
           </div>

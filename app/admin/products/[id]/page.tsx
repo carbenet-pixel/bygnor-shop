@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getProductAdmin, STOCK_STATUS_OPTIONS } from "@/lib/products-admin";
+import { displayName } from "@/lib/format";
 import { listProductGroupsAdmin } from "@/lib/product-groups";
 import { listVendors } from "@/lib/vendors";
 import { SaveButton } from "@/components/save-button";
@@ -43,7 +44,7 @@ export default async function ProductDetailPage({
       </Link>
 
       <h1 className="mb-1 text-xl font-semibold text-slate-900">
-        {product.name}
+        {displayName(product)}
       </h1>
       <p className="mb-6 text-sm text-slate-500">Varenr. {product.sku}</p>
 

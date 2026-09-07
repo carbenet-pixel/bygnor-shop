@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import type { CatalogCategory, CatalogProduct } from "@/lib/catalog";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, displayName } from "@/lib/format";
 import { ProductImage } from "../product-image";
 
 const inputClass =
@@ -17,12 +17,12 @@ function ProductCard({ product }: { product: CatalogProduct }) {
     >
       <ProductImage
         imageUrl={product.imageUrl}
-        alt={product.name}
+        alt={displayName(product)}
         className="aspect-square rounded-lg"
         sizes="(max-width: 640px) 45vw, (max-width: 1024px) 220px, 240px"
       />
       <p className="mt-3 line-clamp-2 text-sm font-medium text-slate-900 group-hover:text-[#185FA5]">
-        {product.name}
+        {displayName(product)}
       </p>
       <p className="text-xs text-slate-400">{product.sku}</p>
       <p
@@ -63,7 +63,7 @@ export function CatalogBrowser({
             products: g.products.filter(
               (p) =>
                 !q ||
-                p.name.toLowerCase().includes(q) ||
+                displayName(p).toLowerCase().includes(q) ||
                 p.sku.toLowerCase().includes(q),
             ),
           }))

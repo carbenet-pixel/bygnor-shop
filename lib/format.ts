@@ -17,6 +17,17 @@ export function roundCurrency(value: number): number {
   return Math.round(value * 100) / 100;
 }
 
+/**
+ * GUI og kundevendte tekster viser altid det danske produktnavn, med
+ * fallback til det oprindelige (svenske) navn for produkter der endnu
+ * ikke er oversat — se products.name_da / order_items.name_snapshot_da.
+ * Bruges ALDRIG til fakturanotifikationen til salg, som bevidst forbliver
+ * svensk (Pidos eget varenavn, til bestilling).
+ */
+export function displayName(item: { name: string; nameDa: string | null }): string {
+  return item.nameDa ?? item.name;
+}
+
 export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("da-DK", {
     dateStyle: "short",
