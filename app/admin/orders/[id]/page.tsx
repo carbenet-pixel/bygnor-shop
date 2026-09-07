@@ -1,9 +1,15 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getOrderAdmin, INVOICE_STATUS_OPTIONS } from "@/lib/orders-admin";
+import {
+  getOrderAdmin,
+  INVOICE_STATUS_OPTIONS,
+  FULFILLMENT_STATUS_OPTIONS,
+  FULFILLMENT_STATUS_LABELS,
+  FULFILLMENT_STATUS_BADGE_CLASSES,
+} from "@/lib/orders-admin";
 import { formatPrice, formatDate } from "@/lib/format";
 import { SaveButton } from "@/components/save-button";
-import { updateOrderStatusAction } from "../actions";
+import { updateOrderStatusAction, updateOrderFulfillmentStatusAction } from "../actions";
 
 export const dynamic = "force-dynamic";
 
@@ -30,7 +36,8 @@ export default async function OrderDetailPage({
   }
 
   const isInvoice = order.paymentMethod === "faktura";
-  const formId = `order-status-${order.id}`;
+  const paymentFormId = `order-status-${order.id}`;
+  const fulfillmentFormId = `order-fulfillment-${order.id}`;
 
   return (
     <div>
@@ -74,64 +81,110 @@ export default async function OrderDetailPage({
         </div>
       </div>
 
-      <div className="mt-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-3 text-sm font-semibold text-slate-900">Betaling</h2>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <div>
-            <span className={labelClass}>Betalingsmetode</span>
-            <p className="text-sm text-slate-900">
-              {PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}
-            </p>
-          </div>
-
-          <div>
-            <span className={labelClass}>Status</span>
-            {isInvoice ? (
-              <div>
-                <form id={formId} action={updateOrderStatusAction}>
-                  <input type="hidden" name="orderId" value={order.id} />
-                </form>
-                <div className="flex items-center gap-2">
-                  <select
-                    form={formId}
-                    name="status"
-                    defaultValue={order.status}
-                    className={inputClass}
-                  >
-                    {INVOICE_STATUS_OPTIONS.map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
-                  <SaveButton formId={formId} action={updateOrderStatusAction} />
-                </div>
-              </div>
-            ) : (
-              <p className="text-sm text-slate-900">{order.status}</p>
-            )}
-            {!isInvoice && (
-              <p className="mt-1 text-xs text-slate-400">
-                Styres udelukkende af Quickpay-callbacket — kan ikke redigeres
-                her.
-              </p>
-            )}
-          </div>
-
-          {!isInvoice && (
+      {/* Betaling og ekspedition er bevidst to adskilte kort — betalingsstatus
+          er ikke et signal om ordren er håndteret. */}
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-slate-900">Betaling</h2>
+          <div className="space-y-4">
             <div>
-              <span className={labelClass}>Quickpay payment-id</span>
+              <span className={labelClass}>Betalingsmetode</span>
               <p className="text-sm text-slate-900">
-                {order.quickpayPaymentId ?? "—"}
+                {PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}
               </p>
             </div>
-          )}
 
-          <div>
-            <span className={labelClass}>Samlet beløb</span>
-            <p className="text-sm font-semibold text-slate-900">
-              {formatPrice(order.totalAmount)}
-            </p>
+            <div>
+              <span className={labelClass}>Betalingsstatus</span>
+              {isInvoice ? (
+                <div>
+                  <form id={paymentFormId} action={updateOrderStatusAction}>
+                    <input type="hidden" name="orderId" value={order.id} />
+                  </form>
+                  <div className="flex items-center gap-2">
+                    <select
+                      form={paymentFormId}
+                      name="status"
+                      defaultValue={order.status}
+                      className={inputClass}
+                    >
+                      {INVOICE_STATUS_OPTIONS.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+                    <SaveButton formId={paymentFormId} action={updateOrderStatusAction} />
+                  </div>
+                </div>
+              ) : (
+                <>
+                  <p className="text-sm text-slate-900">{order.status}</p>
+                  <p className="mt-1 text-xs text-slate-400">
+                    Styres udelukkende af Quickpay-callbacket — kan ikke
+                    redigeres her.
+                  </p>
+                </>
+              )}
+            </div>
+
+            {!isInvoice && (
+              <div>
+                <span className={labelClass}>Quickpay payment-id</span>
+                <p className="text-sm text-slate-900">
+                  {order.quickpayPaymentId ?? "—"}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <span className={labelClass}>Samlet beløb</span>
+              <p className="text-sm font-semibold text-slate-900">
+                {formatPrice(order.totalAmount)}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-slate-900">
+            Ekspedition
+          </h2>
+          <p className="mb-4 text-xs text-slate-500">
+            Gælder uanset betalingsmetode og betalingsstatus — en betalt
+            kort-ordre skal ekspederes på lige fod med en fakturaordre.
+          </p>
+
+          <span
+            className={`mb-3 inline-block rounded-full px-2 py-0.5 text-xs font-medium ${
+              FULFILLMENT_STATUS_BADGE_CLASSES[order.fulfillmentStatus] ??
+              "bg-slate-100 text-slate-500"
+            }`}
+          >
+            {FULFILLMENT_STATUS_LABELS[order.fulfillmentStatus] ??
+              order.fulfillmentStatus}
+          </span>
+
+          <form id={fulfillmentFormId} action={updateOrderFulfillmentStatusAction}>
+            <input type="hidden" name="orderId" value={order.id} />
+          </form>
+          <div className="flex items-center gap-2">
+            <select
+              form={fulfillmentFormId}
+              name="fulfillmentStatus"
+              defaultValue={order.fulfillmentStatus}
+              className={inputClass}
+            >
+              {FULFILLMENT_STATUS_OPTIONS.map((s) => (
+                <option key={s} value={s}>
+                  {FULFILLMENT_STATUS_LABELS[s]}
+                </option>
+              ))}
+            </select>
+            <SaveButton
+              formId={fulfillmentFormId}
+              action={updateOrderFulfillmentStatusAction}
+            />
           </div>
         </div>
       </div>

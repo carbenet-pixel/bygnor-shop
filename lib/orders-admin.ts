@@ -8,12 +8,22 @@ export type OrderAdminListItem = {
   createdAt: string;
   paymentMethod: string;
   status: string;
+  fulfillmentStatus: string;
   totalAmount: number | null;
 };
+
+const ACTION_NEEDED_FULFILLMENT_STATUSES = ["ny", "bestilt_hos_leverandør"];
 
 export type ListOrdersFilter = {
   status?: string;
   paymentMethod?: string;
+  /**
+   * Default (false/undefined): kun ordrer der reelt kræver en handling
+   * (fulfillment_status i 'ny'/'bestilt_hos_leverandør'), ældste først —
+   * det er handlingslisten, ikke totaloversigten. true: alle ordrer,
+   * nyeste først, til opslag/historik.
+   */
+  showAll?: boolean;
 };
 
 export async function listOrdersAdmin(
@@ -23,8 +33,17 @@ export async function listOrdersAdmin(
 
   let query = supabaseAdmin
     .from("orders")
-    .select("id, customer_id, order_reference, created_at, payment_method, status, total_amount")
-    .order("created_at", { ascending: false });
+    .select(
+      "id, customer_id, order_reference, created_at, payment_method, status, fulfillment_status, total_amount",
+    );
+
+  if (filter.showAll) {
+    query = query.order("created_at", { ascending: false });
+  } else {
+    query = query
+      .in("fulfillment_status", ACTION_NEEDED_FULFILLMENT_STATUSES)
+      .order("created_at", { ascending: true });
+  }
 
   if (filter.status) {
     query = query.eq("status", filter.status);
@@ -57,6 +76,7 @@ export async function listOrdersAdmin(
     createdAt: order.created_at as string,
     paymentMethod: order.payment_method as string,
     status: order.status as string,
+    fulfillmentStatus: order.fulfillment_status as string,
     totalAmount: order.total_amount as number | null,
   }));
 }
@@ -83,6 +103,7 @@ export type OrderAdminDetail = {
   deliveryCountry: string;
   paymentMethod: string;
   status: string;
+  fulfillmentStatus: string;
   totalAmount: number | null;
   quickpayPaymentId: string | null;
   items: OrderAdminItem[];
@@ -94,7 +115,7 @@ export async function getOrderAdmin(id: string): Promise<OrderAdminDetail | null
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "id, customer_id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, total_amount, quickpay_payment_id, order_items(name_snapshot, sku_snapshot, quantity, unit_price_snapshot)",
+      "id, customer_id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, quickpay_payment_id, order_items(name_snapshot, sku_snapshot, quantity, unit_price_snapshot)",
     )
     .eq("id", id)
     .single();
@@ -141,20 +162,48 @@ export async function getOrderAdmin(id: string): Promise<OrderAdminDetail | null
     deliveryCountry: order.delivery_country as string,
     paymentMethod: order.payment_method as string,
     status: order.status as string,
+    fulfillmentStatus: order.fulfillment_status as string,
     totalAmount: order.total_amount as number | null,
     quickpayPaymentId: order.quickpay_payment_id as string | null,
     items,
   };
 }
 
-export const INVOICE_STATUS_OPTIONS = ["afventer", "behandlet", "afsendt", "annulleret"] as const;
+// Rent betalingsrelaterede tilstande — IKKE ekspedition, som nu udelukkende
+// lever i fulfillment_status. 'behandlet'/'afsendt' fra 0013 er fjernet
+// herfra igen (se migration 0014).
+export const INVOICE_STATUS_OPTIONS = ["afventer", "betalt", "annulleret"] as const;
 const VALID_INVOICE_STATUS = new Set<string>(INVOICE_STATUS_OPTIONS);
+
+export const FULFILLMENT_STATUS_OPTIONS = [
+  "ny",
+  "bestilt_hos_leverandør",
+  "leveret",
+  "annulleret",
+] as const;
+const VALID_FULFILLMENT_STATUS = new Set<string>(FULFILLMENT_STATUS_OPTIONS);
+
+// Bevidst helt adskilt fra betalingsstatus visuelt (som ikke bruger farve
+// overhovedet) — ingen farve må kunne læses som "betalt = færdig".
+export const FULFILLMENT_STATUS_LABELS: Record<string, string> = {
+  ny: "Ny",
+  bestilt_hos_leverandør: "Bestilt hos leverandør",
+  leveret: "Leveret",
+  annulleret: "Annulleret",
+};
+
+export const FULFILLMENT_STATUS_BADGE_CLASSES: Record<string, string> = {
+  ny: "bg-rose-100 text-rose-700",
+  bestilt_hos_leverandør: "bg-amber-100 text-amber-700",
+  leveret: "bg-emerald-100 text-emerald-700",
+  annulleret: "bg-slate-100 text-slate-500",
+};
 
 export type UpdateOrderStatusResult = { success: true } | { success: false; error: string };
 
 /**
- * Kun for faktura-ordrer — kort-ordrers status styres udelukkende af
- * Quickpay-callbacket (se app/api/quickpay/callback). Betingelsen på
+ * Kun for faktura-ordrer — kort-ordrers betalingsstatus styres udelukkende
+ * af Quickpay-callbacket (se app/api/quickpay/callback). Betingelsen på
  * payment_method i selve UPDATE'et er en ekstra sikkerhed, ikke kun en
  * UI-skjulning: et forsøg på at ramme en kort-ordre rammer 0 rækker.
  */
@@ -182,6 +231,34 @@ export async function updateInvoiceOrderStatus(
 
   if (!data || data.length === 0) {
     return { success: false, error: "Ordren er ikke en fakturaordre — status kan ikke ændres her." };
+  }
+
+  return { success: true };
+}
+
+/**
+ * Ekspeditionsstatus gælder ALLE ordrer uanset betalingsmetode — en betalt
+ * kort-ordre skal ekspederes lige så meget som en fakturaordre. Ingen
+ * payment_method-betingelse her, i modsætning til betalingsstatus ovenfor.
+ */
+export async function updateOrderFulfillmentStatus(
+  orderId: string,
+  fulfillmentStatus: string,
+): Promise<UpdateOrderStatusResult> {
+  if (!VALID_FULFILLMENT_STATUS.has(fulfillmentStatus)) {
+    return { success: false, error: "Ugyldig ekspeditionsstatus." };
+  }
+
+  const supabaseAdmin = createAdminClient();
+
+  const { error } = await supabaseAdmin
+    .from("orders")
+    .update({ fulfillment_status: fulfillmentStatus })
+    .eq("id", orderId);
+
+  if (error) {
+    console.error("[updateOrderFulfillmentStatus]", error);
+    return { success: false, error: "Kunne ikke opdatere ekspeditionsstatus." };
   }
 
   return { success: true };
