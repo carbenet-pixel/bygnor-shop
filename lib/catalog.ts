@@ -1,5 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
+import { displayName } from "@/lib/format";
 
 export type CatalogProduct = {
   id: string;
@@ -73,7 +74,7 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
     supabase.from("categories").select("id, name").order("name"),
     supabase
       .from("product_groups")
-      .select("id, name, category_id")
+      .select("id, name, name_da, category_id")
       .order("name"),
     supabase
       .from("products")
@@ -114,12 +115,19 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
     productsByGroup.set(product.productGroupId, list);
   }
 
+  // product_groups.name er svensk og uoversat (kun de enkelte produkter har
+  // name_da) — indtil en rigtig dansk gruppetitel kurateres manuelt
+  // (product_groups.name_da, migration 0017), falder visningen tilbage til
+  // det alfabetisk første medlems navn (groupProducts er allerede sorteret
+  // efter navn via products-forespørgslen ovenfor).
   const groupsByCategory = new Map<string, CatalogGroup[]>();
   for (const g of groups) {
     const groupProducts = productsByGroup.get(g.id as string) ?? [];
     if (groupProducts.length === 0) continue;
+    const groupName =
+      (g.name_da as string | null) ?? displayName(groupProducts[0]) ?? (g.name as string);
     const list = groupsByCategory.get(g.category_id as string) ?? [];
-    list.push({ id: g.id as string, name: g.name as string, products: groupProducts });
+    list.push({ id: g.id as string, name: groupName, products: groupProducts });
     groupsByCategory.set(g.category_id as string, list);
   }
 
@@ -187,72 +195,94 @@ export async function getCategoryOverview(): Promise<CategoryOverviewItem[]> {
   }));
 }
 
-export type ProductDetail = CatalogProduct & {
+export type ProductGroupMember = CatalogProduct & {
   description: string | null;
-  categoryName: string;
-  productGroupName: string;
+  stockStatus: string;
   vendorName: string;
 };
 
-export async function getProductDetail(
-  id: string,
-): Promise<{ product: ProductDetail; siblings: CatalogProduct[] } | null> {
+export type ProductGroupDetail = {
+  groupId: string;
+  groupName: string;
+  categoryName: string;
+  members: ProductGroupMember[];
+};
+
+/**
+ * Kataloget browses nu pr. produktgruppe, ikke pr. SKU (Pido sælger selv
+ * efter gruppe — fx "Blomhylla" er ét produkt med tre længder). Tager et
+ * PRODUKT-id (ikke gruppe-id) for at holde eksisterende links (kurv,
+ * søgning, gamle links) virkende uændret — siden viser hele gruppen med
+ * det givne produkt forvalgt i variant-vælgeren.
+ */
+export async function getProductGroupDetail(
+  productId: string,
+): Promise<ProductGroupDetail | null> {
   const supabase = await createClient();
 
-  const { data: product, error } = await supabase
+  const { data: product, error: productError } = await supabase
     .from("products")
-    .select(
-      "id, sku, name, name_da, description, base_price, image_url, product_group_id, product_groups(name, categories(name)), vendors(name)",
-    )
-    .eq("id", id)
+    .select("product_group_id")
+    .eq("id", productId)
     .single();
 
-  if (error || !product) {
+  if (productError || !product) {
     return null;
   }
 
-  const group = product.product_groups as unknown as {
-    name: string;
-    categories: { name: string } | null;
-  } | null;
-  const vendor = product.vendors as unknown as { name: string } | null;
+  const groupId = product.product_group_id as string;
 
-  const { data: siblingRows } = await supabase
-    .from("products")
-    .select("id, sku, name, name_da, base_price, image_url, product_group_id")
-    .eq("product_group_id", product.product_group_id as string)
-    .neq("id", id)
-    .order("name");
+  const [{ data: group, error: groupError }, { data: memberRows, error: membersError }] =
+    await Promise.all([
+      supabase
+        .from("product_groups")
+        .select("name, name_da, categories(name)")
+        .eq("id", groupId)
+        .single(),
+      supabase
+        .from("products")
+        .select(
+          "id, sku, name, name_da, description, base_price, image_url, product_group_id, stock_status, vendors(name)",
+        )
+        .eq("product_group_id", groupId)
+        .order("name"),
+    ]);
 
-  const mainProduct = toCatalogProduct(product as Record<string, unknown>);
-  const siblingProducts = (siblingRows ?? []).map((row) => toCatalogProduct(row));
-
-  // Produktet selv + alle søskende UDGØR hele produktgruppen, så kortet er
-  // fuldstændigt — ingen ekstra forespørgsel nødvendig.
-  const fallbackImageByGroup = buildGroupImageFallbackMap(
-    [mainProduct, ...siblingProducts].map((p) => ({
-      productGroupId: p.productGroupId,
-      imageUrl: p.imageUrl,
-    })),
-  );
-
-  if (!mainProduct.imageUrl) {
-    mainProduct.imageUrl = fallbackImageByGroup.get(mainProduct.productGroupId) ?? null;
+  if (groupError || !group || membersError || !memberRows || memberRows.length === 0) {
+    return null;
   }
-  for (const sibling of siblingProducts) {
-    if (!sibling.imageUrl) {
-      sibling.imageUrl = fallbackImageByGroup.get(sibling.productGroupId) ?? null;
+
+  const groupCategory = group.categories as unknown as { name: string } | null;
+
+  const members: ProductGroupMember[] = memberRows.map((row) => {
+    const vendor = row.vendors as unknown as { name: string } | null;
+    return {
+      ...toCatalogProduct(row),
+      description: row.description as string | null,
+      stockStatus: row.stock_status as string,
+      vendorName: vendor?.name ?? "",
+    };
+  });
+
+  // Medlemmerne UDGØR hele gruppen, så kortet er fuldstændigt — ingen
+  // ekstra forespørgsel nødvendig (samme mønster som listCatalog).
+  const fallbackImageByGroup = buildGroupImageFallbackMap(
+    members.map((m) => ({ productGroupId: m.productGroupId, imageUrl: m.imageUrl })),
+  );
+  for (const member of members) {
+    if (!member.imageUrl) {
+      member.imageUrl = fallbackImageByGroup.get(member.productGroupId) ?? null;
     }
   }
 
+  // Samme fallback-princip som produktnavne: product_groups.name_da (endnu
+  // ikke kurateret for nogen grupper) → det alfabetisk første medlems navn.
+  const groupName = (group.name_da as string | null) ?? displayName(members[0]) ?? (group.name as string);
+
   return {
-    product: {
-      ...mainProduct,
-      description: product.description as string | null,
-      categoryName: group?.categories?.name ?? "",
-      productGroupName: group?.name ?? "",
-      vendorName: vendor?.name ?? "",
-    },
-    siblings: siblingProducts,
+    groupId,
+    groupName,
+    categoryName: groupCategory?.name ?? "",
+    members,
   };
 }
