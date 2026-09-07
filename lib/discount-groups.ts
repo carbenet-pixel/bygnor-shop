@@ -61,12 +61,12 @@ export type CustomerDiscount = {
 };
 
 /**
- * Den aktuelt loggede ind kundes reelle rabat: profiles.individual_discount
- * (Fase 2), når sat, OVERSTYRER rabatgruppens sats — det er den eneste
- * meningsfulde tolkning af at begge felter findes på samme profil (bekræftet
- * mod rigtige data: en kunde med discount_group='standard' (0%) har
- * individual_discount=3, som tydeligvis skal være den effektive sats).
- * Ellers bruges gruppens discount_percent. Ingen session → 0%.
+ * Den aktuelt loggede ind kundes reelle rabat: den HØJESTE af rabatgruppens
+ * sats og profiles.individual_discount — bekræftet af Søren. Individuel
+ * rabat trumfer altså kun når den er STRENGT højere end gruppens sats,
+ * ikke en ubetinget overstyring (den tidligere antagelse holdt kun på ét
+ * testdatapunkt, hvor gruppen tilfældigvis var 0% — se rettelsen her).
+ * Ingen session → 0%.
  */
 export async function getCustomerDiscount(): Promise<CustomerDiscount> {
   const supabase = await createClient();
@@ -88,21 +88,19 @@ export async function getCustomerDiscount(): Promise<CustomerDiscount> {
     return { percent: 0, label: "Standard (0%)" };
   }
 
-  if (profile.individual_discount != null) {
-    const percent = profile.individual_discount as number;
-    return { percent, label: `Individuel rabat (${percent}%)` };
-  }
-
   const { data: group } = await supabase
     .from("discount_groups")
     .select("name, discount_percent")
     .eq("id", profile.discount_group as string)
     .maybeSingle();
 
-  if (!group) {
-    return { percent: 0, label: "Standard (0%)" };
+  const groupPercent = (group?.discount_percent as number | undefined) ?? 0;
+  const groupName = (group?.name as string | undefined) ?? "Standard";
+  const individualPercent = profile.individual_discount as number | null;
+
+  if (individualPercent != null && individualPercent > groupPercent) {
+    return { percent: individualPercent, label: `Individuel rabat (${individualPercent}%)` };
   }
 
-  const percent = group.discount_percent as number;
-  return { percent, label: `${group.name as string} (${percent}%)` };
+  return { percent: groupPercent, label: `${groupName} (${groupPercent}%)` };
 }
