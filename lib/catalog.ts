@@ -79,7 +79,7 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
     supabase
       .from("products")
       .select("id, sku, name, name_da, base_price, image_url, product_group_id")
-      .order("name"),
+      .order("sort_order"),
   ]);
 
   if (categoriesError || !categories) {
@@ -116,9 +116,9 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
   }
 
   // product_groups.name_da er kurateret manuelt for alle nuværende grupper.
-  // Falder tilbage til det alfabetisk første medlems navn for fremtidige
-  // grupper uden kurateret titel (groupProducts er allerede sorteret efter
-  // navn via products-forespørgslen ovenfor).
+  // Falder tilbage til gruppens første medlem i sort_order-rækkefølge for
+  // fremtidige grupper uden kurateret titel (groupProducts er allerede
+  // sorteret efter sort_order via products-forespørgslen ovenfor).
   const groupsByCategory = new Map<string, CatalogGroup[]>();
   for (const g of groups) {
     const groupProducts = productsByGroup.get(g.id as string) ?? [];
@@ -148,8 +148,8 @@ export type CategoryOverviewItem = {
 /**
  * Afdelings-oversigt til /shop. Billedprioritet: categories.image_url
  * (fremtidig manuel kuratering, se migration 0009) → første produkt i
- * afdelingen (alfabetisk) med et sat image_url → null (viser fallback-
- * placeholder i UI'et).
+ * afdelingen (efter sort_order) med et sat image_url → null (viser
+ * fallback-placeholder i UI'et).
  */
 export async function getCategoryOverview(): Promise<CategoryOverviewItem[]> {
   const supabase = await createClient();
@@ -165,7 +165,7 @@ export async function getCategoryOverview(): Promise<CategoryOverviewItem[]> {
       .from("products")
       .select("product_group_id, image_url")
       .not("image_url", "is", null)
-      .order("name"),
+      .order("sort_order"),
   ]);
 
   if (categoriesError || !categories) {
@@ -231,6 +231,10 @@ export async function getProductGroupDetail(
 
   const groupId = product.product_group_id as string;
 
+  // Variant-rækkefølgen kan IKKE afgøres pålideligt ud fra varenummer eller
+  // navn (fx sorteres "2120x1200" alfabetisk før "2120x900") — sort_order er
+  // beregnet ud fra Pidos eget trykte katalog (migration 0018) og er den
+  // eneste korrekte sortering for varianter i en gruppe.
   const [{ data: group, error: groupError }, { data: memberRows, error: membersError }] =
     await Promise.all([
       supabase
@@ -244,7 +248,7 @@ export async function getProductGroupDetail(
           "id, sku, name, name_da, description, base_price, image_url, product_group_id, stock_status, vendors(name)",
         )
         .eq("product_group_id", groupId)
-        .order("name"),
+        .order("sort_order"),
     ]);
 
   if (groupError || !group || membersError || !memberRows || memberRows.length === 0) {
@@ -275,7 +279,7 @@ export async function getProductGroupDetail(
   }
 
   // Samme fallback-princip som produktnavne: product_groups.name_da (kurateret
-  // manuelt) → det alfabetisk første medlems navn for grupper uden titel.
+  // manuelt) → det første medlem i sort_order-rækkefølge for grupper uden titel.
   const groupName = (group.name_da as string | null) ?? displayName(members[0]) ?? (group.name as string);
 
   return {
