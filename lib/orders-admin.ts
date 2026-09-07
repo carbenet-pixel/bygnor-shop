@@ -18,10 +18,13 @@ export type ListOrdersFilter = {
   status?: string;
   paymentMethod?: string;
   /**
-   * Default (false/undefined): kun ordrer der reelt kræver en handling
-   * (fulfillment_status i 'ny'/'bestilt_hos_leverandør'), ældste først —
-   * det er handlingslisten, ikke totaloversigten. true: alle ordrer,
-   * nyeste først, til opslag/historik.
+   * Default (false/undefined): kun ordrer der reelt kræver en handling —
+   * fulfillment_status i 'ny'/'bestilt_hos_leverandør', OG en gyldig
+   * forpligtelse (faktura, eller kort med status='betalt') — ældste
+   * først. En kort-ordre der aldrig blev betalt (afventer_betaling/
+   * betaling_fejlet) er ikke noget at bestille hos Pido for og hører
+   * derfor ikke til her. true: alle ordrer, ingen indsnævring, nyeste
+   * først — til opslag/historik og for at finde hængende betalinger.
    */
   showAll?: boolean;
 };
@@ -42,6 +45,11 @@ export async function listOrdersAdmin(
   } else {
     query = query
       .in("fulfillment_status", ACTION_NEEDED_FULFILLMENT_STATUSES)
+      // En kort-ordre er kun en gyldig forpligtelse (noget at bestille hos
+      // Pido for) når betalingen reelt er gennemført. afventer_betaling/
+      // betaling_fejlet hører ikke hjemme i handlingslisten som standard —
+      // de findes stadig via "Vis alle ordrer" + betalingsstatus-filteret.
+      .or("payment_method.eq.faktura,and(payment_method.eq.kort,status.eq.betalt)")
       .order("created_at", { ascending: true });
   }
 
