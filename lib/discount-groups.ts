@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { createClient } from "@/lib/supabase/server";
 
 export type DiscountGroup = {
   id: string;
@@ -52,4 +53,56 @@ export async function updateDiscountGroup(
   }
 
   return { success: true };
+}
+
+export type CustomerDiscount = {
+  percent: number;
+  label: string;
+};
+
+/**
+ * Den aktuelt loggede ind kundes reelle rabat: profiles.individual_discount
+ * (Fase 2), når sat, OVERSTYRER rabatgruppens sats — det er den eneste
+ * meningsfulde tolkning af at begge felter findes på samme profil (bekræftet
+ * mod rigtige data: en kunde med discount_group='standard' (0%) har
+ * individual_discount=3, som tydeligvis skal være den effektive sats).
+ * Ellers bruges gruppens discount_percent. Ingen session → 0%.
+ */
+export async function getCustomerDiscount(): Promise<CustomerDiscount> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return { percent: 0, label: "Standard (0%)" };
+  }
+
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("discount_group, individual_discount")
+    .eq("id", user.id)
+    .maybeSingle();
+
+  if (!profile) {
+    return { percent: 0, label: "Standard (0%)" };
+  }
+
+  if (profile.individual_discount != null) {
+    const percent = profile.individual_discount as number;
+    return { percent, label: `Individuel rabat (${percent}%)` };
+  }
+
+  const { data: group } = await supabase
+    .from("discount_groups")
+    .select("name, discount_percent")
+    .eq("id", profile.discount_group as string)
+    .maybeSingle();
+
+  if (!group) {
+    return { percent: 0, label: "Standard (0%)" };
+  }
+
+  const percent = group.discount_percent as number;
+  return { percent, label: `${group.name as string} (${percent}%)` };
 }

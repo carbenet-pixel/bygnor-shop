@@ -21,6 +21,7 @@ type OrderMailItem = {
   name: string;
   sku: string;
   quantity: number;
+  basePrice: number | null;
   unitPrice: number | null;
 };
 
@@ -37,6 +38,7 @@ type OrderMailData = {
   deliveryCountry: string;
   paymentMethod: string;
   totalAmount: number | null;
+  discountLabel: string | null;
   items: OrderMailItem[];
 };
 
@@ -46,7 +48,7 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "order_reference, customer_id, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, order_items(name_snapshot, sku_snapshot, quantity, unit_price_snapshot)",
+      "order_reference, customer_id, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, discount_label, order_items(name_snapshot, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
     )
     .eq("id", orderId)
     .single();
@@ -70,12 +72,14 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
       name_snapshot: string;
       sku_snapshot: string;
       quantity: number;
+      base_price_snapshot: number | null;
       unit_price_snapshot: number | null;
     }>
   ).map((row) => ({
     name: row.name_snapshot,
     sku: row.sku_snapshot,
     quantity: row.quantity,
+    basePrice: row.base_price_snapshot,
     unitPrice: row.unit_price_snapshot,
   }));
 
@@ -92,6 +96,7 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
     deliveryCountry: order.delivery_country as string,
     paymentMethod: order.payment_method as string,
     totalAmount: order.total_amount as number | null,
+    discountLabel: order.discount_label as string | null,
     items,
   };
 }
@@ -99,14 +104,40 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
 function formatItemsList(items: OrderMailItem[]): string {
   return items
     .map((item) => {
+      const normalPriceText = formatPrice(item.basePrice);
       const unitPriceText = formatPrice(item.unitPrice);
+      const lineRabat =
+        item.basePrice != null && item.unitPrice != null
+          ? (item.basePrice - item.unitPrice) * item.quantity
+          : null;
+      const rabatText = lineRabat && lineRabat > 0 ? ` · Rabat: -${formatPrice(lineRabat)}` : "";
       const lineTotalText =
         item.unitPrice != null
           ? formatPrice(item.unitPrice * item.quantity)
           : "Pris oplyses snarest";
-      return `- ${item.name} (${item.sku}) · ${item.quantity} stk · ${unitPriceText}/stk · Linjesum: ${lineTotalText}`;
+      return `- ${item.name} (${item.sku}) · ${item.quantity} stk · Normalpris: ${normalPriceText}/stk${rabatText} · Pris: ${unitPriceText}/stk · Linjesum: ${lineTotalText}`;
     })
     .join("\n");
+}
+
+function formatTotals(data: OrderMailData): string {
+  const pricedItems = data.items.filter((item) => item.basePrice != null);
+  if (pricedItems.length === 0) {
+    return `Samlet beløb: ${formatPrice(data.totalAmount)}`;
+  }
+
+  const normalTotal = pricedItems.reduce(
+    (sum, item) => sum + item.basePrice! * item.quantity,
+    0,
+  );
+  const discountTotal = normalTotal - (data.totalAmount ?? normalTotal);
+
+  const lines = [`Normalpris i alt: ${formatPrice(normalTotal)}`];
+  if (discountTotal > 0) {
+    lines.push(`Rabat (${data.discountLabel ?? "ukendt"}): -${formatPrice(discountTotal)}`);
+  }
+  lines.push(`Samlet beløb (endelig pris): ${formatPrice(data.totalAmount)}`);
+  return lines.join("\n");
 }
 
 function formatDeliveryAddress(data: OrderMailData): string {
@@ -175,7 +206,7 @@ ${formatItemsList(data.items)}
 Leveringsadresse:
 ${formatDeliveryAddress(data)}
 
-Samlet beløb: ${formatPrice(data.totalAmount)}
+${formatTotals(data)}
 `;
 
   await sendMailWithRetry({ to: [salesEmail], subject, body }, `fakturanotifikation ordre=${orderId}`);
@@ -213,7 +244,7 @@ Leveringsadresse:
 ${formatDeliveryAddress(data)}
 
 Betalingsstatus: ${paymentStatusText}
-Samlet beløb: ${formatPrice(data.totalAmount)}
+${formatTotals(data)}
 `;
 
   await sendMailWithRetry(

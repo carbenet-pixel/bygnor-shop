@@ -39,6 +39,14 @@ export default async function OrderDetailPage({
   const paymentFormId = `order-status-${order.id}`;
   const fulfillmentFormId = `order-fulfillment-${order.id}`;
 
+  const pricedItems = order.items.filter((item) => item.basePrice != null);
+  const normalTotal = pricedItems.reduce(
+    (sum, item) => sum + item.basePrice! * item.quantity,
+    0,
+  );
+  const discountTotal =
+    pricedItems.length > 0 ? normalTotal - (order.totalAmount ?? normalTotal) : 0;
+
   return (
     <div>
       <Link
@@ -138,7 +146,30 @@ export default async function OrderDetailPage({
             )}
 
             <div>
-              <span className={labelClass}>Samlet beløb</span>
+              <span className={labelClass}>Rabat</span>
+              <p className="text-sm text-slate-900">
+                {order.discountLabel ?? `${order.discountPercent}%`}
+              </p>
+            </div>
+
+            {pricedItems.length > 0 && (
+              <div>
+                <span className={labelClass}>Normalpris i alt</span>
+                <p className="text-sm text-slate-900">{formatPrice(normalTotal)}</p>
+              </div>
+            )}
+
+            {discountTotal > 0 && (
+              <div>
+                <span className={labelClass}>Rabat i alt</span>
+                <p className="text-sm text-emerald-700">
+                  -{formatPrice(discountTotal)}
+                </p>
+              </div>
+            )}
+
+            <div>
+              <span className={labelClass}>Samlet beløb (endelig pris)</span>
               <p className="text-sm font-semibold text-slate-900">
                 {formatPrice(order.totalAmount)}
               </p>
@@ -196,26 +227,46 @@ export default async function OrderDetailPage({
               <th className={cellClass}>Vare</th>
               <th className={cellClass}>Varenr.</th>
               <th className={cellClass}>Antal</th>
+              <th className={cellClass}>Normalpris</th>
+              <th className={cellClass}>Rabat</th>
               <th className={cellClass}>Pris pr. stk</th>
               <th className={cellClass}>Linjesum</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100">
-            {order.items.map((item, index) => (
-              <tr key={index}>
-                <td className={`${cellClass} font-medium text-slate-900`}>
-                  {item.name}
-                </td>
-                <td className={`${cellClass} text-slate-500`}>{item.sku}</td>
-                <td className={cellClass}>{item.quantity}</td>
-                <td className={cellClass}>{formatPrice(item.unitPrice)}</td>
-                <td className={cellClass}>
-                  {item.unitPrice != null
-                    ? formatPrice(item.unitPrice * item.quantity)
-                    : "Pris oplyses snarest"}
-                </td>
-              </tr>
-            ))}
+            {order.items.map((item, index) => {
+              const lineRabat =
+                item.basePrice != null && item.unitPrice != null
+                  ? (item.basePrice - item.unitPrice) * item.quantity
+                  : null;
+              return (
+                <tr key={index}>
+                  <td className={`${cellClass} font-medium text-slate-900`}>
+                    {item.name}
+                  </td>
+                  <td className={`${cellClass} text-slate-500`}>{item.sku}</td>
+                  <td className={cellClass}>{item.quantity}</td>
+                  <td className={`${cellClass} text-slate-500`}>
+                    {formatPrice(item.basePrice)}
+                  </td>
+                  <td className={cellClass}>
+                    {lineRabat == null || lineRabat === 0 ? (
+                      <span className="text-slate-400">—</span>
+                    ) : (
+                      <span className="text-emerald-700">
+                        -{formatPrice(lineRabat)}
+                      </span>
+                    )}
+                  </td>
+                  <td className={cellClass}>{formatPrice(item.unitPrice)}</td>
+                  <td className={cellClass}>
+                    {item.unitPrice != null
+                      ? formatPrice(item.unitPrice * item.quantity)
+                      : "Pris oplyses snarest"}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

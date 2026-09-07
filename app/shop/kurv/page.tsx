@@ -1,19 +1,33 @@
 import Link from "next/link";
+import { createClient } from "@/lib/supabase/server";
 import { getCart } from "@/lib/cart";
 import { isInvoiceApproved } from "@/lib/checkout";
-import { formatPrice } from "@/lib/format";
+import { getCustomerDiscount } from "@/lib/discount-groups";
+import { listAddresses } from "@/lib/delivery-addresses";
+import { formatPrice, roundCurrency } from "@/lib/format";
 import { ProductImage } from "../product-image";
 import { SaveButton } from "@/components/save-button";
 import { updateCartItemAction, removeCartItemAction } from "./actions";
-import { CheckoutButton } from "./checkout-button";
-import { InvoiceCheckoutButton } from "./invoice-checkout-button";
+import { CheckoutButton, CARD_CHECKOUT_FORM_ID } from "./checkout-button";
+import { InvoiceCheckoutButton, INVOICE_CHECKOUT_FORM_ID } from "./invoice-checkout-button";
+import { DeliveryAddressFields } from "./delivery-address-fields";
 
 export const dynamic = "force-dynamic";
 
 const cellClass = "px-4 py-3 align-middle";
 
 export default async function CartPage() {
-  const [cart, invoiceApproved] = await Promise.all([getCart(), isInvoiceApproved()]);
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  const [cart, invoiceApproved, discount, addresses] = await Promise.all([
+    getCart(),
+    isInvoiceApproved(),
+    getCustomerDiscount(),
+    user ? listAddresses(user.id) : Promise.resolve([]),
+  ]);
 
   if (cart.items.length === 0) {
     return (
@@ -34,12 +48,29 @@ export default async function CartPage() {
     );
   }
 
+  const defaultAddress = addresses[0]
+    ? {
+        contactName: addresses[0].contactName,
+        streetAddress: addresses[0].streetAddress,
+        label: addresses[0].label,
+        postalCode: addresses[0].postalCode,
+        city: addresses[0].city,
+        country: addresses[0].country,
+      }
+    : null;
+
   const itemsWithoutPrice = cart.items.filter((item) => item.basePrice == null);
   const pricedItems = cart.items.filter((item) => item.basePrice != null);
-  const total = pricedItems.reduce(
+
+  const normalTotal = pricedItems.reduce(
     (sum, item) => sum + item.basePrice! * item.quantity,
     0,
   );
+  const discountedTotal = pricedItems.reduce((sum, item) => {
+    const discountedUnit = roundCurrency(item.basePrice! * (1 - discount.percent / 100));
+    return sum + discountedUnit * item.quantity;
+  }, 0);
+  const discountTotal = roundCurrency(normalTotal - discountedTotal);
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -56,7 +87,8 @@ export default async function CartPage() {
               <th className={cellClass}>Billede</th>
               <th className={cellClass}>Vare</th>
               <th className={cellClass}>Antal</th>
-              <th className={cellClass}>Pris pr. stk</th>
+              <th className={cellClass}>Normalpris</th>
+              <th className={cellClass}>Rabat</th>
               <th className={cellClass}>Subtotal</th>
               <th className={cellClass}></th>
             </tr>
@@ -64,8 +96,15 @@ export default async function CartPage() {
           <tbody className="divide-y divide-slate-100">
             {cart.items.map((item) => {
               const formId = `cart-item-${item.id}`;
-              const subtotal =
-                item.basePrice != null ? item.basePrice * item.quantity : null;
+              const discountedUnit =
+                item.basePrice != null
+                  ? roundCurrency(item.basePrice * (1 - discount.percent / 100))
+                  : null;
+              const lineRabat =
+                item.basePrice != null && discountedUnit != null
+                  ? roundCurrency((item.basePrice - discountedUnit) * item.quantity)
+                  : null;
+              const subtotal = discountedUnit != null ? discountedUnit * item.quantity : null;
 
               return (
                 <tr key={item.id}>
@@ -109,6 +148,18 @@ export default async function CartPage() {
                       formatPrice(item.basePrice)
                     )}
                   </td>
+                  <td className={cellClass}>
+                    {lineRabat == null || lineRabat === 0 ? (
+                      <span className="text-slate-400">—</span>
+                    ) : (
+                      <span className="text-emerald-700">
+                        -{formatPrice(lineRabat)}
+                        <span className="block text-xs text-slate-400">
+                          ({discount.label})
+                        </span>
+                      </span>
+                    )}
+                  </td>
                   <td className={`${cellClass} font-medium text-slate-900`}>
                     {subtotal == null ? (
                       <span className="font-normal text-slate-400 italic">—</span>
@@ -146,22 +197,35 @@ export default async function CartPage() {
           <p className="text-sm text-slate-500 italic">
             Pris oplyses snarest for alle varer i kurven.
           </p>
-        ) : itemsWithoutPrice.length > 0 ? (
+        ) : (
           <>
-            <p className="mb-1 text-xs text-slate-500">
-              Foreløbig sum (ekskl. {itemsWithoutPrice.length}{" "}
-              {itemsWithoutPrice.length === 1 ? "vare" : "varer"} uden pris
-              endnu):
+            {itemsWithoutPrice.length > 0 && (
+              <p className="mb-1 text-xs text-slate-500">
+                Foreløbig sum (ekskl. {itemsWithoutPrice.length}{" "}
+                {itemsWithoutPrice.length === 1 ? "vare" : "varer"} uden pris
+                endnu):
+              </p>
+            )}
+            <p className="text-sm text-slate-500">
+              Normalpris i alt: {formatPrice(normalTotal)}
             </p>
+            {discountTotal > 0 && (
+              <p className="text-sm text-emerald-700">
+                Rabat ({discount.label}): -{formatPrice(discountTotal)}
+              </p>
+            )}
             <p className="text-lg font-semibold text-slate-900">
-              {formatPrice(total)}
+              Endelig pris: {formatPrice(discountedTotal)}
             </p>
           </>
-        ) : (
-          <p className="text-lg font-semibold text-slate-900">
-            Sum: {formatPrice(total)}
-          </p>
         )}
+
+        <div className="mt-4 w-full">
+          <DeliveryAddressFields
+            defaultAddress={defaultAddress}
+            targetFormIds={[CARD_CHECKOUT_FORM_ID, INVOICE_CHECKOUT_FORM_ID]}
+          />
+        </div>
 
         <CheckoutButton />
         {invoiceApproved ? (

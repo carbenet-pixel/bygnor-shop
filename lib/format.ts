@@ -10,6 +10,13 @@ export function formatPrice(price: number | null): string {
   }).format(price);
 }
 
+/** Runder til 2 decimaler (øre) — bruges ved rabatberegning, så linjepriser
+ * altid er et reelt kronebeløb, og summen af de viste linjer matcher den
+ * viste total. */
+export function roundCurrency(value: number): number {
+  return Math.round(value * 100) / 100;
+}
+
 export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("da-DK", {
     dateStyle: "short",

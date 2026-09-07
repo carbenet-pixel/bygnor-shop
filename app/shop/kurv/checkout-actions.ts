@@ -7,8 +7,10 @@ import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listAddresses, type DeliveryAddress } from "@/lib/delivery-addresses";
 import { getCart, type CartItem } from "@/lib/cart";
+import { getCustomerDiscount } from "@/lib/discount-groups";
 import { createPaymentAndLink } from "@/lib/quickpay";
 import { sendInvoiceOrderNotification, sendOrderConfirmation } from "@/lib/order-mail";
+import { roundCurrency } from "@/lib/format";
 
 export type CheckoutState = { error: string | null };
 
@@ -22,15 +24,71 @@ function generateOrderReference(): string {
   return crypto.randomUUID().replace(/-/g, "").slice(0, 20);
 }
 
+type ResolvedDeliveryAddress = {
+  recipientName: string;
+  addressLine1: string;
+  addressLine2: string | null;
+  postalCode: string;
+  city: string;
+  country: string;
+};
+
+/**
+ * Læser leveringsadressen fra formularen: enten den valgte alternative
+ * engangsadresse (useAlternativeAddress="on"), eller kundens standard-
+ * adresse som fallback. Ingen "gemte adresser"-bog — kun ét alternativ
+ * pr. ordre, jf. prompten.
+ */
+function resolveDeliveryAddress(
+  formData: FormData,
+  defaultAddress: DeliveryAddress | undefined,
+  customerEmail: string | null,
+): ResolvedDeliveryAddress | { error: string } {
+  const useAlternative = formData.get("useAlternativeAddress") === "on";
+
+  if (useAlternative) {
+    const recipientName = ((formData.get("altRecipientName") as string) ?? "").trim();
+    const addressLine1 = ((formData.get("altAddressLine1") as string) ?? "").trim();
+    const addressLine2 = ((formData.get("altAddressLine2") as string) ?? "").trim() || null;
+    const postalCode = ((formData.get("altPostalCode") as string) ?? "").trim();
+    const city = ((formData.get("altCity") as string) ?? "").trim();
+    const country = ((formData.get("altCountry") as string) ?? "").trim();
+
+    if (!recipientName || !addressLine1 || !postalCode || !city || !country) {
+      return {
+        error: "Udfyld alle påkrævede felter for den alternative leveringsadresse.",
+      };
+    }
+
+    return { recipientName, addressLine1, addressLine2, postalCode, city, country };
+  }
+
+  if (!defaultAddress) {
+    return {
+      error: "Ingen leveringsadresse fundet på din konto — kontakt Bygnor.",
+    };
+  }
+
+  return {
+    recipientName: defaultAddress.contactName ?? customerEmail ?? "Ukendt",
+    addressLine1: defaultAddress.streetAddress,
+    addressLine2: defaultAddress.label,
+    postalCode: defaultAddress.postalCode ?? "",
+    city: defaultAddress.city ?? "",
+    country: defaultAddress.country,
+  };
+}
+
 async function createOrderWithReference(
   supabase: SupabaseServerClient,
   input: {
     customerId: string;
-    customerEmail: string | null;
-    deliveryAddress: DeliveryAddress;
+    deliveryAddress: ResolvedDeliveryAddress;
     paymentMethod: "kort" | "faktura";
     status: string;
     totalAmount: number | null;
+    discountPercent: number;
+    discountLabel: string;
   },
 ): Promise<{ orderId: string; orderReference: string } | { error: string }> {
   let orderReference = generateOrderReference();
@@ -40,17 +98,18 @@ async function createOrderWithReference(
       .from("orders")
       .insert({
         customer_id: input.customerId,
-        delivery_recipient_name:
-          input.deliveryAddress.contactName ?? input.customerEmail ?? "Ukendt",
-        delivery_address_line1: input.deliveryAddress.streetAddress,
-        delivery_address_line2: input.deliveryAddress.label,
-        delivery_postal_code: input.deliveryAddress.postalCode ?? "",
-        delivery_city: input.deliveryAddress.city ?? "",
+        delivery_recipient_name: input.deliveryAddress.recipientName,
+        delivery_address_line1: input.deliveryAddress.addressLine1,
+        delivery_address_line2: input.deliveryAddress.addressLine2,
+        delivery_postal_code: input.deliveryAddress.postalCode,
+        delivery_city: input.deliveryAddress.city,
         delivery_country: input.deliveryAddress.country,
         payment_method: input.paymentMethod,
         status: input.status,
         total_amount: input.totalAmount,
         order_reference: orderReference,
+        discount_percent: input.discountPercent,
+        discount_label: input.discountLabel,
       })
       .select("id")
       .single();
@@ -68,10 +127,17 @@ async function createOrderWithReference(
   return { error: "Kunne ikke generere et unikt ordre-id. Prøv igen." };
 }
 
+/**
+ * Beregner rabatteret pris pr. linje (base_price_snapshot = normalpris,
+ * unit_price_snapshot = det kunden reelt betaler) og indsætter ordrelinjerne.
+ * Varer uden base_price ("pris oplyses snarest") får fortsat ingen pris —
+ * intet at beregne rabat på.
+ */
 async function insertOrderItems(
   supabase: SupabaseServerClient,
   orderId: string,
   items: CartItem[],
+  discountPercent: number,
 ): Promise<string | null> {
   const { error } = await supabase.from("order_items").insert(
     items.map((item) => ({
@@ -79,7 +145,11 @@ async function insertOrderItems(
       product_id: item.productId,
       sku_snapshot: item.sku,
       name_snapshot: item.name,
-      unit_price_snapshot: item.basePrice,
+      base_price_snapshot: item.basePrice,
+      unit_price_snapshot:
+        item.basePrice != null
+          ? roundCurrency(item.basePrice * (1 - discountPercent / 100))
+          : null,
       quantity: item.quantity,
     })),
   );
@@ -91,14 +161,27 @@ async function insertOrderItems(
   return null;
 }
 
+function computeDiscountedTotal(items: CartItem[], discountPercent: number): number | null {
+  const pricedItems = items.filter((item) => item.basePrice != null);
+  if (pricedItems.length === 0) return null;
+
+  return roundCurrency(
+    pricedItems.reduce((sum, item) => {
+      const discountedUnit = roundCurrency(item.basePrice! * (1 - discountPercent / 100));
+      return sum + discountedUnit * item.quantity;
+    }, 0),
+  );
+}
+
 /**
- * Starter kort-betaling for hele kurven: opretter en ordre + ordrelinjer,
- * beder Quickpay om et betalingslink, og redirecter kunden dertil.
- * Faktura-sporet rører denne funktion ikke ved.
+ * Starter kort-betaling for hele kurven: opretter en ordre + ordrelinjer
+ * (med kundens rabat anvendt), beder Quickpay om et betalingslink for det
+ * RABATTEREDE beløb, og redirecter kunden dertil. Faktura-sporet rører
+ * denne funktion ikke ved.
  */
 export async function initiateCardCheckoutAction(
   _prevState: CheckoutState,
-  _formData: FormData,
+  formData: FormData,
 ): Promise<CheckoutState> {
   const supabase = await createClient();
   const {
@@ -124,36 +207,33 @@ export async function initiateCardCheckoutAction(
     };
   }
 
-  // Ingen leveringsadresse-valg bygget endnu — bruger kundens første
-  // adresse (listAddresses sorterer standard-adressen først, hvis en er
-  // sat). Kontakt Bygnor hvis ingen findes.
   const addresses = await listAddresses(user.id);
-  const deliveryAddress = addresses[0];
-  if (!deliveryAddress) {
-    return {
-      error: "Ingen leveringsadresse fundet på din konto — kontakt Bygnor.",
-    };
+  const resolved = resolveDeliveryAddress(formData, addresses[0], user.email ?? null);
+  if ("error" in resolved) {
+    return { error: resolved.error };
   }
 
-  const totalAmount = cart.items.reduce(
-    (sum, item) => sum + item.basePrice! * item.quantity,
-    0,
-  );
+  const discount = await getCustomerDiscount();
+  const totalAmount = computeDiscountedTotal(cart.items, discount.percent);
+  if (totalAmount == null) {
+    return { error: "Kunne ikke beregne et beløb for kurven." };
+  }
 
   const created = await createOrderWithReference(supabase, {
     customerId: user.id,
-    customerEmail: user.email ?? null,
-    deliveryAddress,
+    deliveryAddress: resolved,
     paymentMethod: "kort",
     status: "afventer_betaling",
     totalAmount,
+    discountPercent: discount.percent,
+    discountLabel: discount.label,
   });
   if ("error" in created) {
     return { error: created.error };
   }
   const { orderId, orderReference } = created;
 
-  const itemsError = await insertOrderItems(supabase, orderId, cart.items);
+  const itemsError = await insertOrderItems(supabase, orderId, cart.items, discount.percent);
   if (itemsError) {
     return { error: itemsError };
   }
@@ -193,7 +273,7 @@ export async function initiateCardCheckoutAction(
  */
 export async function initiateInvoiceCheckoutAction(
   _prevState: CheckoutState,
-  _formData: FormData,
+  formData: FormData,
 ): Promise<CheckoutState> {
   const supabase = await createClient();
   const {
@@ -220,33 +300,29 @@ export async function initiateInvoiceCheckoutAction(
   }
 
   const addresses = await listAddresses(user.id);
-  const deliveryAddress = addresses[0];
-  if (!deliveryAddress) {
-    return {
-      error: "Ingen leveringsadresse fundet på din konto — kontakt Bygnor.",
-    };
+  const resolved = resolveDeliveryAddress(formData, addresses[0], user.email ?? null);
+  if ("error" in resolved) {
+    return { error: resolved.error };
   }
 
-  const pricedItems = cart.items.filter((item) => item.basePrice != null);
-  const totalAmount =
-    pricedItems.length > 0
-      ? pricedItems.reduce((sum, item) => sum + item.basePrice! * item.quantity, 0)
-      : null;
+  const discount = await getCustomerDiscount();
+  const totalAmount = computeDiscountedTotal(cart.items, discount.percent);
 
   const created = await createOrderWithReference(supabase, {
     customerId: user.id,
-    customerEmail: user.email ?? null,
-    deliveryAddress,
+    deliveryAddress: resolved,
     paymentMethod: "faktura",
     status: "afventer",
     totalAmount,
+    discountPercent: discount.percent,
+    discountLabel: discount.label,
   });
   if ("error" in created) {
     return { error: created.error };
   }
   const { orderId, orderReference } = created;
 
-  const itemsError = await insertOrderItems(supabase, orderId, cart.items);
+  const itemsError = await insertOrderItems(supabase, orderId, cart.items, discount.percent);
   if (itemsError) {
     return { error: itemsError };
   }

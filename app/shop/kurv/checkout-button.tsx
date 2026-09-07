@@ -5,6 +5,8 @@ import { initiateCardCheckoutAction, type CheckoutState } from "./checkout-actio
 
 const initialState: CheckoutState = { error: null };
 
+export const CARD_CHECKOUT_FORM_ID = "card-checkout-form";
+
 export function CheckoutButton() {
   const [state, formAction, isPending] = useActionState(
     initiateCardCheckoutAction,
@@ -12,7 +14,11 @@ export function CheckoutButton() {
   );
 
   return (
-    <form action={formAction} className="mt-4 w-full sm:w-auto">
+    <form
+      id={CARD_CHECKOUT_FORM_ID}
+      action={formAction}
+      className="mt-4 w-full sm:w-auto"
+    >
       {state.error && <p className="mb-2 text-sm text-red-600">{state.error}</p>}
       <button
         type="submit"

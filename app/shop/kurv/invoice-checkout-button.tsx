@@ -5,6 +5,8 @@ import { initiateInvoiceCheckoutAction, type CheckoutState } from "./checkout-ac
 
 const initialState: CheckoutState = { error: null };
 
+export const INVOICE_CHECKOUT_FORM_ID = "invoice-checkout-form";
+
 export function InvoiceCheckoutButton() {
   const [state, formAction, isPending] = useActionState(
     initiateInvoiceCheckoutAction,
@@ -12,7 +14,11 @@ export function InvoiceCheckoutButton() {
   );
 
   return (
-    <form action={formAction} className="mt-2 w-full sm:w-auto">
+    <form
+      id={INVOICE_CHECKOUT_FORM_ID}
+      action={formAction}
+      className="mt-2 w-full sm:w-auto"
+    >
       {state.error && <p className="mb-2 text-sm text-red-600">{state.error}</p>}
       <button
         type="submit"

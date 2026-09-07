@@ -93,6 +93,7 @@ export type OrderAdminItem = {
   name: string;
   sku: string;
   quantity: number;
+  basePrice: number | null;
   unitPrice: number | null;
 };
 
@@ -113,6 +114,8 @@ export type OrderAdminDetail = {
   status: string;
   fulfillmentStatus: string;
   totalAmount: number | null;
+  discountPercent: number;
+  discountLabel: string | null;
   quickpayPaymentId: string | null;
   items: OrderAdminItem[];
 };
@@ -123,7 +126,7 @@ export async function getOrderAdmin(id: string): Promise<OrderAdminDetail | null
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "id, customer_id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, quickpay_payment_id, order_items(name_snapshot, sku_snapshot, quantity, unit_price_snapshot)",
+      "id, customer_id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, discount_percent, discount_label, quickpay_payment_id, order_items(name_snapshot, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
     )
     .eq("id", id)
     .single();
@@ -146,12 +149,14 @@ export async function getOrderAdmin(id: string): Promise<OrderAdminDetail | null
       name_snapshot: string;
       sku_snapshot: string;
       quantity: number;
+      base_price_snapshot: number | null;
       unit_price_snapshot: number | null;
     }>
   ).map((row) => ({
     name: row.name_snapshot,
     sku: row.sku_snapshot,
     quantity: row.quantity,
+    basePrice: row.base_price_snapshot,
     unitPrice: row.unit_price_snapshot,
   }));
 
@@ -172,6 +177,8 @@ export async function getOrderAdmin(id: string): Promise<OrderAdminDetail | null
     status: order.status as string,
     fulfillmentStatus: order.fulfillment_status as string,
     totalAmount: order.total_amount as number | null,
+    discountPercent: order.discount_percent as number,
+    discountLabel: order.discount_label as string | null,
     quickpayPaymentId: order.quickpay_payment_id as string | null,
     items,
   };
