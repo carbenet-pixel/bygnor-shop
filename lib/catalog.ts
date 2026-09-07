@@ -115,11 +115,10 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
     productsByGroup.set(product.productGroupId, list);
   }
 
-  // product_groups.name er svensk og uoversat (kun de enkelte produkter har
-  // name_da) — indtil en rigtig dansk gruppetitel kurateres manuelt
-  // (product_groups.name_da, migration 0017), falder visningen tilbage til
-  // det alfabetisk første medlems navn (groupProducts er allerede sorteret
-  // efter navn via products-forespørgslen ovenfor).
+  // product_groups.name_da er kurateret manuelt for alle nuværende grupper.
+  // Falder tilbage til det alfabetisk første medlems navn for fremtidige
+  // grupper uden kurateret titel (groupProducts er allerede sorteret efter
+  // navn via products-forespørgslen ovenfor).
   const groupsByCategory = new Map<string, CatalogGroup[]>();
   for (const g of groups) {
     const groupProducts = productsByGroup.get(g.id as string) ?? [];
@@ -275,8 +274,8 @@ export async function getProductGroupDetail(
     }
   }
 
-  // Samme fallback-princip som produktnavne: product_groups.name_da (endnu
-  // ikke kurateret for nogen grupper) → det alfabetisk første medlems navn.
+  // Samme fallback-princip som produktnavne: product_groups.name_da (kurateret
+  // manuelt) → det alfabetisk første medlems navn for grupper uden titel.
   const groupName = (group.name_da as string | null) ?? displayName(members[0]) ?? (group.name as string);
 
   return {
