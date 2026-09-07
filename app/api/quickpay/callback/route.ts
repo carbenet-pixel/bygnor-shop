@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyChecksum } from "@/lib/quickpay";
 import { sendOrderConfirmation } from "@/lib/order-mail";
@@ -82,6 +83,14 @@ export async function POST(request: NextRequest) {
 
     if (cart) {
       await supabaseAdmin.from("cart_items").delete().eq("cart_id", cart.id);
+
+      // Callbacket kommer fra Quickpays server, ikke kundens egen browser
+      // (refresh() fra next/cache virker kun i en Server Action) —
+      // revalidatePath er den eneste vej til at sikre at /shop/kurv og
+      // kurv-badge'et viser den ryddede kurv næste gang kunden rent
+      // faktisk besøger siden, i stedet for en forældet, cachet version.
+      revalidatePath("/shop/kurv");
+      revalidatePath("/shop", "layout");
     }
 
     // Sendes først nu — betalingen er reelt bekræftet, ikke bare igangsat.

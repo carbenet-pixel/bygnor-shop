@@ -1,6 +1,7 @@
 "use server";
 
 import crypto from "node:crypto";
+import { revalidatePath, refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
@@ -252,6 +253,13 @@ export async function initiateInvoiceCheckoutAction(
 
   if (cart.id) {
     await supabase.from("cart_items").delete().eq("cart_id", cart.id);
+
+    // Kurven er ryddet med det samme her (modsat kort, hvor det sker i
+    // Quickpay-callbacket) — sørg for at /shop/kurv og kurv-badge'et i
+    // headeren ikke viser en forældet, cachet version bagefter.
+    revalidatePath("/shop/kurv");
+    revalidatePath("/shop", "layout");
+    refresh();
   }
 
   await Promise.all([
