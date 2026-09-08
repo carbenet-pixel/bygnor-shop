@@ -37,6 +37,16 @@ export type CustomerOrderListItem = {
 };
 
 /**
+ * En kort-ordre er kun en gyldig forpligtelse når betalingen reelt er
+ * gennemført — samme distinktion som admins "kræver handling"-liste (se
+ * lib/orders-admin.ts). En faktura-ordre er altid gyldig fra oprettelsen.
+ * Anvendes i BÅDE liste og detalje, så et gammelt link til en afvist/
+ * afventende kort-ordre ikke virker.
+ */
+const VALID_CUSTOMER_ORDER_FILTER =
+  "payment_method.eq.faktura,and(payment_method.eq.kort,status.eq.betalt)";
+
+/**
  * Kunden ser kun EGNE ordrer. RLS ("Kunde ser egne ordrer, admin ser
  * alle", migration 0011) ville lade en admin/superadmin-session se ALLE
  * ordrer her — derfor filtreres der eksplicit på customer_id, uafhængigt
@@ -56,6 +66,7 @@ export async function listOrdersForCustomer(): Promise<CustomerOrderListItem[]> 
       "id, order_reference, created_at, payment_method, status, fulfillment_status, total_amount",
     )
     .eq("customer_id", user.id)
+    .or(VALID_CUSTOMER_ORDER_FILTER)
     .order("created_at", { ascending: false });
 
   if (error || !data) {
@@ -121,6 +132,7 @@ export async function getOrderForCustomer(
     )
     .eq("id", id)
     .eq("customer_id", user.id)
+    .or(VALID_CUSTOMER_ORDER_FILTER)
     .maybeSingle();
 
   if (error || !order) {
