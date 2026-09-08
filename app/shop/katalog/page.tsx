@@ -7,15 +7,20 @@ export const dynamic = "force-dynamic";
 export default async function CatalogPage({
   searchParams,
 }: {
-  searchParams: Promise<{ avdeling?: string; q?: string }>;
+  searchParams: Promise<{ avdeling?: string; underkategori?: string; q?: string }>;
 }) {
-  const [{ avdeling, q }, categories] = await Promise.all([
+  const [{ avdeling, underkategori, q }, categories] = await Promise.all([
     searchParams,
     listCatalog(),
   ]);
 
   const initialCategoryId =
     avdeling && categories.some((c) => c.id === avdeling) ? avdeling : "alle";
+  const initialSubcategoryId =
+    underkategori &&
+    categories.some((c) => c.groups.some((g) => g.subcategoryId === underkategori))
+      ? underkategori
+      : "alle";
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8">
@@ -36,6 +41,7 @@ export default async function CatalogPage({
       <CatalogBrowser
         categories={categories}
         initialCategoryId={initialCategoryId}
+        initialSubcategoryId={initialSubcategoryId}
         initialQuery={q ?? ""}
       />
     </div>

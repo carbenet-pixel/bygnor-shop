@@ -61,22 +61,42 @@ type FilteredGroup = { group: CatalogGroup; matchedProductId?: string };
 export function CatalogBrowser({
   categories,
   initialCategoryId = "alle",
+  initialSubcategoryId = "alle",
   initialQuery = "",
 }: {
   categories: CatalogCategory[];
   initialCategoryId?: string;
+  initialSubcategoryId?: string;
   initialQuery?: string;
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [categoryId, setCategoryId] = useState(initialCategoryId);
+  const [subcategoryId, setSubcategoryId] = useState(initialSubcategoryId);
 
   const q = query.trim().toLowerCase();
+
+  // Underkategori-valgmuligheder for den VALGTE afdeling — kun relevant når
+  // en enkelt afdeling er valgt, og kun de underkategorier der reelt findes
+  // blandt dens grupper (nogle afdelinger har slet ingen, fx Lagerinventar).
+  const subcategoryOptions = useMemo(() => {
+    if (categoryId === "alle") return [];
+    const category = categories.find((c) => c.id === categoryId);
+    if (!category) return [];
+    const seen = new Map<string, string>();
+    for (const g of category.groups) {
+      if (g.subcategoryId && !seen.has(g.subcategoryId)) {
+        seen.set(g.subcategoryId, g.subcategoryName ?? g.subcategoryId);
+      }
+    }
+    return [...seen.entries()].sort((a, b) => a[1].localeCompare(b[1], "da"));
+  }, [categories, categoryId]);
 
   const filtered = useMemo(() => {
     return categories
       .filter((c) => categoryId === "alle" || c.id === categoryId)
       .map((c) => {
         const groups: FilteredGroup[] = c.groups
+          .filter((g) => subcategoryId === "alle" || g.subcategoryId === subcategoryId)
           .map((g): FilteredGroup | null => {
             if (!q) return { group: g };
             const matched = g.products.find(
@@ -90,7 +110,7 @@ export function CatalogBrowser({
         return { ...c, groups };
       })
       .filter((c) => c.groups.length > 0);
-  }, [categories, categoryId, q]);
+  }, [categories, categoryId, subcategoryId, q]);
 
   const totalMatches = filtered.reduce((sum, c) => sum + c.groups.length, 0);
 
@@ -106,7 +126,10 @@ export function CatalogBrowser({
         />
         <select
           value={categoryId}
-          onChange={(e) => setCategoryId(e.target.value)}
+          onChange={(e) => {
+            setCategoryId(e.target.value);
+            setSubcategoryId("alle");
+          }}
           className={`${inputClass} sm:max-w-xs`}
         >
           <option value="alle">Alle afdelinger</option>
@@ -116,6 +139,20 @@ export function CatalogBrowser({
             </option>
           ))}
         </select>
+        {subcategoryOptions.length > 0 && (
+          <select
+            value={subcategoryId}
+            onChange={(e) => setSubcategoryId(e.target.value)}
+            className={`${inputClass} sm:max-w-xs`}
+          >
+            <option value="alle">Alle underkategorier</option>
+            {subcategoryOptions.map(([id, name]) => (
+              <option key={id} value={id}>
+                {name}
+              </option>
+            ))}
+          </select>
+        )}
       </div>
 
       <p className="mb-6 text-sm text-slate-500">

@@ -54,7 +54,11 @@ export default async function ShopPage() {
           {categories.map((category) => (
             <Link
               key={category.id}
-              href={`/shop/katalog?avdeling=${category.id}`}
+              href={
+                category.hasSubcategories
+                  ? `/shop/afdeling/${category.id}`
+                  : `/shop/katalog?avdeling=${category.id}`
+              }
               className="group block rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
             >
               <ProductImage
