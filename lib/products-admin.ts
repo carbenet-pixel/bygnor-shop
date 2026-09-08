@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { STOCK_STATUS_OPTIONS } from "@/lib/product-constants";
-import { buildGroupImageFallbackMap } from "@/lib/catalog";
+import { buildGroupImageFallbackMap, groupImageFallbackKey } from "@/lib/catalog";
 
 export { STOCK_STATUS_OPTIONS };
 
@@ -23,7 +23,7 @@ export async function listProductsAdmin(): Promise<ProductAdminListItem[]> {
   const { data, error } = await supabaseAdmin
     .from("products")
     .select(
-      "id, sku, name, name_da, base_price, image_url, active, product_group_id, product_groups(name, categories(name))",
+      "id, sku, name, name_da, base_price, image_url, active, product_group_id, image_subgroup_key, product_groups(name, categories(name))",
     )
     .order("sku");
 
@@ -37,6 +37,7 @@ export async function listProductsAdmin(): Promise<ProductAdminListItem[]> {
   const fallbackImageByGroup = buildGroupImageFallbackMap(
     data.map((row) => ({
       productGroupId: row.product_group_id as string,
+      imageSubgroupKey: row.image_subgroup_key as string,
       imageUrl: row.image_url as string | null,
     })),
   );
@@ -57,7 +58,12 @@ export async function listProductsAdmin(): Promise<ProductAdminListItem[]> {
       basePrice: row.base_price as number | null,
       imageUrl:
         (row.image_url as string | null) ??
-        fallbackImageByGroup.get(row.product_group_id as string) ??
+        fallbackImageByGroup.get(
+          groupImageFallbackKey(
+            row.product_group_id as string,
+            row.image_subgroup_key as string,
+          ),
+        ) ??
         null,
       active: row.active as boolean,
     };
@@ -87,7 +93,7 @@ export async function getProductAdmin(id: string): Promise<ProductAdminDetail | 
   const { data, error } = await supabaseAdmin
     .from("products")
     .select(
-      "id, sku, name, name_da, description, product_group_id, vendor_id, catalog_page, base_price, vat_rate, stock_status, lead_time_days, image_url, active",
+      "id, sku, name, name_da, description, product_group_id, image_subgroup_key, vendor_id, catalog_page, base_price, vat_rate, stock_status, lead_time_days, image_url, active",
     )
     .eq("id", id)
     .single();
@@ -99,11 +105,14 @@ export async function getProductAdmin(id: string): Promise<ProductAdminDetail | 
   let imageUrl = data.image_url as string | null;
   if (!imageUrl) {
     // Kun ét produkt hentet her — dets gruppe kan indeholde andre varer
-    // med billede, som ikke selv er en del af denne forespørgsel.
+    // med billede, som ikke selv er en del af denne forespørgsel. Kun
+    // søskende i SAMME image_subgroup_key kommer i betragtning (se
+    // buildGroupImageFallbackMap) — ingen fallback på tværs af undergrupper.
     const { data: groupProducts } = await supabaseAdmin
       .from("products")
       .select("image_url")
       .eq("product_group_id", data.product_group_id as string)
+      .eq("image_subgroup_key", data.image_subgroup_key as string)
       .not("image_url", "is", null)
       .limit(1)
       .maybeSingle();

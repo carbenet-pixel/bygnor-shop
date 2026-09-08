@@ -1,6 +1,6 @@
 import "server-only";
 import { createClient } from "@/lib/supabase/server";
-import { buildGroupImageFallbackMap } from "@/lib/catalog";
+import { buildGroupImageFallbackMap, groupImageFallbackKey } from "@/lib/catalog";
 
 export type CartItem = {
   id: string;
@@ -74,12 +74,12 @@ export async function getCartItemCount(): Promise<number> {
 async function getGroupImageFallbackCandidates(
   supabase: SupabaseServerClient,
   groupIds: string[],
-): Promise<{ productGroupId: string; imageUrl: string | null }[]> {
+): Promise<{ productGroupId: string; imageSubgroupKey: string; imageUrl: string | null }[]> {
   if (groupIds.length === 0) return [];
 
   const { data, error } = await supabase
     .from("products")
-    .select("product_group_id, image_url")
+    .select("product_group_id, image_subgroup_key, image_url")
     .in("product_group_id", groupIds)
     .not("image_url", "is", null);
 
@@ -90,6 +90,7 @@ async function getGroupImageFallbackCandidates(
 
   return data.map((row) => ({
     productGroupId: row.product_group_id as string,
+    imageSubgroupKey: row.image_subgroup_key as string,
     imageUrl: row.image_url as string | null,
   }));
 }
@@ -105,7 +106,7 @@ export async function getCart(): Promise<Cart> {
   const { data, error } = await supabase
     .from("cart_items")
     .select(
-      "id, product_id, quantity, products(sku, name, name_da, image_url, base_price, product_group_id)",
+      "id, product_id, quantity, products(sku, name, name_da, image_url, base_price, product_group_id, image_subgroup_key)",
     )
     .eq("cart_id", cartId)
     .order("created_at");
@@ -122,6 +123,7 @@ export async function getCart(): Promise<Cart> {
     image_url: string | null;
     base_price: number | null;
     product_group_id: string;
+    image_subgroup_key: string;
   };
 
   const rows = data.map((row) => ({
@@ -149,7 +151,11 @@ export async function getCart(): Promise<Cart> {
       nameDa: product?.name_da ?? null,
       imageUrl:
         product?.image_url ??
-        (product ? (fallbackImageByGroup.get(product.product_group_id) ?? null) : null),
+        (product
+          ? (fallbackImageByGroup.get(
+              groupImageFallbackKey(product.product_group_id, product.image_subgroup_key),
+            ) ?? null)
+          : null),
       basePrice: product?.base_price ?? null,
       quantity: row.quantity as number,
     })),

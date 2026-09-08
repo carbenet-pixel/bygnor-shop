@@ -10,6 +10,7 @@ export type CatalogProduct = {
   basePrice: number | null;
   imageUrl: string | null;
   productGroupId: string;
+  imageSubgroupKey: string;
 };
 
 export type CatalogGroup = {
@@ -32,17 +33,34 @@ export type CatalogCategory = {
  * uden oprydning. "rows" behøver ikke være udtømmende for alle grupper —
  * kald med ekstra kandidat-rækker hvis den viste mængde ikke selv dækker
  * hele gruppen (se lib/cart.ts / lib/products-admin.ts).
+ *
+ * Nøglen er (product_group_id, image_subgroup_key) sammen, IKKE kun
+ * gruppen — en gruppe kan indeholde visuelt forskellige undertyper (fx
+ * "med vippa" vs. almindeligt lige spyd i "Dubbelspjut för spårpanel"),
+ * og et billede må ALDRIG arves på tværs af undergrupper. Findes intet
+ * billede i egen undergruppe, er der bevidst ingen videre fallback til en
+ * anden undergruppe — kald-stedet skal vise placeholder i det tilfælde
+ * (se migration 0020).
  */
 export function buildGroupImageFallbackMap(
-  rows: { productGroupId: string; imageUrl: string | null }[],
+  rows: { productGroupId: string; imageSubgroupKey: string; imageUrl: string | null }[],
 ): Map<string, string> {
   const map = new Map<string, string>();
   for (const row of rows) {
-    if (row.imageUrl && !map.has(row.productGroupId)) {
-      map.set(row.productGroupId, row.imageUrl);
+    if (!row.imageUrl) continue;
+    const key = groupImageFallbackKey(row.productGroupId, row.imageSubgroupKey);
+    if (!map.has(key)) {
+      map.set(key, row.imageUrl);
     }
   }
   return map;
+}
+
+export function groupImageFallbackKey(
+  productGroupId: string,
+  imageSubgroupKey: string,
+): string {
+  return `${productGroupId}::${imageSubgroupKey}`;
 }
 
 function toCatalogProduct(row: Record<string, unknown>): CatalogProduct {
@@ -54,6 +72,7 @@ function toCatalogProduct(row: Record<string, unknown>): CatalogProduct {
     basePrice: row.base_price as number | null,
     imageUrl: row.image_url as string | null,
     productGroupId: row.product_group_id as string,
+    imageSubgroupKey: row.image_subgroup_key as string,
   };
 }
 
@@ -78,7 +97,9 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
       .order("name"),
     supabase
       .from("products")
-      .select("id, sku, name, name_da, base_price, image_url, product_group_id")
+      .select(
+        "id, sku, name, name_da, base_price, image_url, product_group_id, image_subgroup_key",
+      )
       .order("sort_order"),
   ]);
 
@@ -100,6 +121,7 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
   const fallbackImageByGroup = buildGroupImageFallbackMap(
     products.map((row) => ({
       productGroupId: row.product_group_id as string,
+      imageSubgroupKey: row.image_subgroup_key as string,
       imageUrl: row.image_url as string | null,
     })),
   );
@@ -108,7 +130,10 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
   for (const row of products) {
     const product = toCatalogProduct(row);
     if (!product.imageUrl) {
-      product.imageUrl = fallbackImageByGroup.get(product.productGroupId) ?? null;
+      product.imageUrl =
+        fallbackImageByGroup.get(
+          groupImageFallbackKey(product.productGroupId, product.imageSubgroupKey),
+        ) ?? null;
     }
     const list = productsByGroup.get(product.productGroupId) ?? [];
     list.push(product);
@@ -245,7 +270,7 @@ export async function getProductGroupDetail(
       supabase
         .from("products")
         .select(
-          "id, sku, name, name_da, description, base_price, image_url, product_group_id, stock_status, vendors(name)",
+          "id, sku, name, name_da, description, base_price, image_url, product_group_id, image_subgroup_key, stock_status, vendors(name)",
         )
         .eq("product_group_id", groupId)
         .order("sort_order"),
@@ -268,13 +293,23 @@ export async function getProductGroupDetail(
   });
 
   // Medlemmerne UDGØR hele gruppen, så kortet er fuldstændigt — ingen
-  // ekstra forespørgsel nødvendig (samme mønster som listCatalog).
+  // ekstra forespørgsel nødvendig (samme mønster som listCatalog). Hver
+  // variant arver kun fra søskende i SAMME image_subgroup_key, så billedet
+  // korrekt skifter (eller viser placeholder) når kunden vælger en anden
+  // variant i dropdownet — se buildGroupImageFallbackMap.
   const fallbackImageByGroup = buildGroupImageFallbackMap(
-    members.map((m) => ({ productGroupId: m.productGroupId, imageUrl: m.imageUrl })),
+    members.map((m) => ({
+      productGroupId: m.productGroupId,
+      imageSubgroupKey: m.imageSubgroupKey,
+      imageUrl: m.imageUrl,
+    })),
   );
   for (const member of members) {
     if (!member.imageUrl) {
-      member.imageUrl = fallbackImageByGroup.get(member.productGroupId) ?? null;
+      member.imageUrl =
+        fallbackImageByGroup.get(
+          groupImageFallbackKey(member.productGroupId, member.imageSubgroupKey),
+        ) ?? null;
     }
   }
 
