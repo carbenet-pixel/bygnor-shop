@@ -193,6 +193,7 @@ const VALID_INVOICE_STATUS = new Set<string>(INVOICE_STATUS_OPTIONS);
 export const FULFILLMENT_STATUS_OPTIONS = [
   "ny",
   "bestilt_hos_leverandør",
+  "afsendt",
   "leveret",
   "annulleret",
 ] as const;
@@ -203,6 +204,7 @@ const VALID_FULFILLMENT_STATUS = new Set<string>(FULFILLMENT_STATUS_OPTIONS);
 export const FULFILLMENT_STATUS_LABELS: Record<string, string> = {
   ny: "Ny",
   bestilt_hos_leverandør: "Bestilt hos leverandør",
+  afsendt: "Afsendt",
   leveret: "Leveret",
   annulleret: "Annulleret",
 };
@@ -210,6 +212,7 @@ export const FULFILLMENT_STATUS_LABELS: Record<string, string> = {
 export const FULFILLMENT_STATUS_BADGE_CLASSES: Record<string, string> = {
   ny: "bg-rose-100 text-rose-700",
   bestilt_hos_leverandør: "bg-amber-100 text-amber-700",
+  afsendt: "bg-sky-100 text-sky-700",
   leveret: "bg-emerald-100 text-emerald-700",
   annulleret: "bg-slate-100 text-slate-500",
 };
