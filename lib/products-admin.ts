@@ -10,6 +10,7 @@ export type ProductAdminListItem = {
   sku: string;
   name: string;
   nameDa: string | null;
+  vendorName: string;
   categoryName: string;
   productGroupName: string;
   basePrice: number | null;
@@ -20,10 +21,13 @@ export type ProductAdminListItem = {
 export async function listProductsAdmin(): Promise<ProductAdminListItem[]> {
   const supabaseAdmin = createAdminClient();
 
+  // sku er kun unikt PR. LEVERANDØR (vendor_id, sku), migration 0021 — to
+  // produkter kan derfor godt vise samme Varenr.-tekst her. Leverandørnavn
+  // hentes med, så de kan skelnes i listen.
   const { data, error } = await supabaseAdmin
     .from("products")
     .select(
-      "id, sku, name, name_da, base_price, image_url, active, product_group_id, image_subgroup_key, product_groups(name, categories(name))",
+      "id, sku, name, name_da, base_price, image_url, active, product_group_id, image_subgroup_key, product_groups(name, categories(name)), vendors(name)",
     )
     .order("sku");
 
@@ -47,12 +51,14 @@ export async function listProductsAdmin(): Promise<ProductAdminListItem[]> {
       name: string;
       categories: { name: string } | null;
     } | null;
+    const vendor = row.vendors as unknown as { name: string } | null;
 
     return {
       id: row.id as string,
       sku: row.sku as string,
       name: row.name as string,
       nameDa: row.name_da as string | null,
+      vendorName: vendor?.name ?? "—",
       categoryName: group?.categories?.name ?? "—",
       productGroupName: group?.name ?? "—",
       basePrice: row.base_price as number | null,
@@ -196,7 +202,10 @@ export async function createProduct(
 
   if (error || !data) {
     if (error?.code === "23505") {
-      return { success: false, error: "Varenummeret (SKU) findes allerede." };
+      return {
+        success: false,
+        error: "Varenummeret (SKU) findes allerede for denne leverandør.",
+      };
     }
     console.error("[createProduct]", error);
     return { success: false, error: "Kunne ikke oprette produktet." };
@@ -231,6 +240,15 @@ export async function updateProduct(
     .eq("id", id);
 
   if (error) {
+    if (error.code === "23505") {
+      // sku selv redigeres ikke her, men vendor_id gør — et skift af
+      // leverandør kan nu kollidere, hvis den nye leverandør allerede har
+      // et produkt med samme sku (products_vendor_id_sku_key, migration 0021).
+      return {
+        success: false,
+        error: "Den valgte leverandør har allerede et produkt med dette varenummer (SKU).",
+      };
+    }
     console.error("[updateProduct]", error);
     return { success: false, error: "Kunne ikke opdatere produktet." };
   }

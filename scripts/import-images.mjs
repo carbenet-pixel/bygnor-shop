@@ -60,22 +60,43 @@ for (const f of files) {
 
 const { data: products, error: productsError } = await supabase
   .from("products")
-  .select("id, sku");
+  .select("id, sku, vendor_id, vendors(name)");
 if (productsError) throw new Error(`kunne ikke hente produkter: ${productsError.message}`);
-const skuToProduct = new Map(products.map((p) => [p.sku, p]));
+
+// sku er kun unikt PR. LEVERANDØR (vendor_id, sku), migration 0021 — så
+// et Artnr kan i princippet matche flere produkter fra forskellige
+// leverandører. Filnavnet alene bærer ingen leverandør-information, så
+// den slags kan IKKE afgøres automatisk — de logges som ambiguousVendor
+// og springes over, i stedet for at gætte og risikere at sætte billedet
+// på det forkerte produkt.
+const skuToProducts = new Map();
+for (const p of products) {
+  const list = skuToProducts.get(p.sku) ?? [];
+  list.push(p);
+  skuToProducts.set(p.sku, list);
+}
 
 let converted = 0;
 let unmatched = 0;
 const versionNotices = [];
 const conflicts = [];
+const ambiguousVendor = [];
 const failures = [];
 
 for (const [artnr, fileList] of byArtnr) {
-  const product = skuToProduct.get(artnr);
-  if (!product) {
+  const matches = skuToProducts.get(artnr) ?? [];
+  if (matches.length === 0) {
     unmatched++;
     continue;
   }
+  if (matches.length > 1) {
+    ambiguousVendor.push({
+      artnr,
+      vendors: matches.map((m) => m.vendors?.name ?? m.vendor_id),
+    });
+    continue;
+  }
+  const product = matches[0];
 
   let chosen = fileList[0];
   if (fileList.length > 1) {
@@ -112,6 +133,12 @@ for (const [artnr, fileList] of byArtnr) {
       .jpeg({ quality: 85 })
       .toBuffer();
 
+    // NB: stien er kun Artnr, uden leverandør — hvis en anden leverandør
+    // en dag har SAMME sku som Pido (nu muligt, se migration 0021), vil et
+    // upsert her overskrive Pidos billede i Storage. ambiguousVendor
+    // ovenfor fanger kun den fælles-sku-i-DB-situation; det er endnu ikke
+    // sket i praksis, så stien er bevidst ikke lavet leverandør-specifik
+    // her, for ikke at ændre alle 400+ eksisterende image_url'er.
     const objectPath = `${artnr}.jpg`;
     const { error: uploadError } = await supabase.storage
       .from("product-images")
@@ -151,5 +178,7 @@ console.log(`Version-heuristik brugt (samme billede, flere vNN): ${versionNotice
 for (const w of versionNotices) console.log(`  - ${w}`);
 console.log(`Konflikter (forskellige produkter, samme Artnr — IKKE ændret, se import/image-conflicts.csv): ${conflicts.length}`);
 for (const c of conflicts) console.log(`  - Artnr ${c.artnr}: ${c.files.join(" | ")}`);
+console.log(`Tvetydig leverandør (Artnr matcher flere produkter fra forskellige leverandører — IKKE ændret): ${ambiguousVendor.length}`);
+for (const a of ambiguousVendor) console.log(`  - Artnr ${a.artnr}: ${a.vendors.join(" / ")}`);
 console.log(`Fejlede konverteringer/uploads: ${failures.length}`);
 for (const f of failures) console.log(`  - ${f}`);

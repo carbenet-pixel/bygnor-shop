@@ -38,6 +38,7 @@ export default async function AdminProductsPage() {
               <tr>
                 <th className={cellClass}>Billede</th>
                 <th className={cellClass}>Varenr.</th>
+                <th className={cellClass}>Leverandør</th>
                 <th className={cellClass}>Navn</th>
                 <th className={cellClass}>Kategori / Gruppe</th>
                 <th className={cellClass}>Pris</th>
@@ -58,6 +59,9 @@ export default async function AdminProductsPage() {
                   </td>
                   <td className={`${cellClass} text-slate-500`}>
                     {product.sku}
+                  </td>
+                  <td className={`${cellClass} text-slate-500`}>
+                    {product.vendorName}
                   </td>
                   <td className={`${cellClass} font-medium text-slate-900`}>
                     <Link
