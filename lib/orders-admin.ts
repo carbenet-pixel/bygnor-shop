@@ -10,6 +10,7 @@ export type OrderAdminListItem = {
   status: string;
   fulfillmentStatus: string;
   totalAmount: number | null;
+  externalCustomerNumber: string | null;
 };
 
 const ACTION_NEEDED_FULFILLMENT_STATUSES = ["ny", "bestilt_hos_leverandør"];
@@ -37,7 +38,7 @@ export async function listOrdersAdmin(
   let query = supabaseAdmin
     .from("orders")
     .select(
-      "id, customer_id, order_reference, created_at, payment_method, status, fulfillment_status, total_amount",
+      "id, customer_id, order_reference, created_at, payment_method, status, fulfillment_status, total_amount, external_customer_number_snapshot",
     );
 
   if (filter.showAll) {
@@ -86,6 +87,7 @@ export async function listOrdersAdmin(
     status: order.status as string,
     fulfillmentStatus: order.fulfillment_status as string,
     totalAmount: order.total_amount as number | null,
+    externalCustomerNumber: order.external_customer_number_snapshot as string | null,
   }));
 }
 
@@ -117,6 +119,7 @@ export type OrderAdminDetail = {
   discountPercent: number;
   discountLabel: string | null;
   quickpayPaymentId: string | null;
+  externalCustomerNumber: string | null;
   items: OrderAdminItem[];
 };
 
@@ -126,7 +129,7 @@ export async function getOrderAdmin(id: string): Promise<OrderAdminDetail | null
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "id, customer_id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, discount_percent, discount_label, quickpay_payment_id, order_items(name_snapshot, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
+      "id, customer_id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, discount_percent, discount_label, quickpay_payment_id, external_customer_number_snapshot, order_items(name_snapshot, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
     )
     .eq("id", id)
     .single();
@@ -180,6 +183,7 @@ export async function getOrderAdmin(id: string): Promise<OrderAdminDetail | null
     discountPercent: order.discount_percent as number,
     discountLabel: order.discount_label as string | null,
     quickpayPaymentId: order.quickpay_payment_id as string | null,
+    externalCustomerNumber: order.external_customer_number_snapshot as string | null,
     items,
   };
 }

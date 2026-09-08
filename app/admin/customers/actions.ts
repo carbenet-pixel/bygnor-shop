@@ -18,6 +18,9 @@ export async function updateCustomerAction(formData: FormData) {
 
   if (!customerId || !discountGroup) return;
 
+  const externalCustomerNumber =
+    ((formData.get("externalCustomerNumber") as string) ?? "").trim() || null;
+
   await updateCustomer({
     customerId,
     discountGroup,
@@ -27,6 +30,7 @@ export async function updateCustomerAction(formData: FormData) {
     paymentMethod,
     creditLimit: parseOptionalNumber(formData.get("creditLimit")),
     paymentTermsDays: parseOptionalNumber(formData.get("paymentTermsDays")),
+    externalCustomerNumber,
   });
 
   revalidatePath("/admin/customers");

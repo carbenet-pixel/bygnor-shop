@@ -93,6 +93,17 @@ async function createOrderWithReference(
 ): Promise<{ orderId: string; orderReference: string } | { error: string }> {
   let orderReference = generateOrderReference();
 
+  // Fastfryses ved oprettelse (samme princip som leveringsadresse/priser) —
+  // en senere ændring af kundens eksterne kundenummer må ikke ændre
+  // historiske ordrer. Valgfrit felt, så null er en normal værdi her.
+  const { data: profile } = await supabase
+    .from("profiles")
+    .select("external_customer_number")
+    .eq("id", input.customerId)
+    .maybeSingle();
+  const externalCustomerNumberSnapshot =
+    (profile?.external_customer_number as string | null) ?? null;
+
   for (let attempt = 0; attempt < 5; attempt++) {
     const { data: order, error } = await supabase
       .from("orders")
@@ -110,6 +121,7 @@ async function createOrderWithReference(
         order_reference: orderReference,
         discount_percent: input.discountPercent,
         discount_label: input.discountLabel,
+        external_customer_number_snapshot: externalCustomerNumberSnapshot,
       })
       .select("id")
       .single();

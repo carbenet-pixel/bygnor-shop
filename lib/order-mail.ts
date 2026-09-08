@@ -31,6 +31,7 @@ type OrderMailData = {
   customerEmail: string | null;
   companyName: string | null;
   cvrNumber: string | null;
+  externalCustomerNumber: string | null;
   deliveryRecipientName: string;
   deliveryAddressLine1: string;
   deliveryAddressLine2: string | null;
@@ -49,7 +50,7 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "order_reference, customer_id, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, discount_label, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
+      "order_reference, customer_id, external_customer_number_snapshot, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, discount_label, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
     )
     .eq("id", orderId)
     .single();
@@ -91,6 +92,7 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
     customerEmail: userResult.data?.user?.email ?? null,
     companyName: (profile?.company_name as string | null) ?? null,
     cvrNumber: (profile?.cvr_number as string | null) ?? null,
+    externalCustomerNumber: order.external_customer_number_snapshot as string | null,
     deliveryRecipientName: order.delivery_recipient_name as string,
     deliveryAddressLine1: order.delivery_address_line1 as string,
     deliveryAddressLine2: order.delivery_address_line2 as string | null,
@@ -205,11 +207,15 @@ export async function sendInvoiceOrderNotification(orderId: string): Promise<voi
 
   const subject = `Ny fakturaordre — ${data.companyName ?? "Ukendt kunde"} — ${formatPrice(data.totalAmount)}`;
 
+  const externalCustomerNumberLine = data.externalCustomerNumber
+    ? `\nEksternt kundenummer: ${data.externalCustomerNumber}`
+    : "";
+
   const body = `Ny ordre med faktura som betalingsmetode.
 
 Kunde: ${data.companyName ?? "Ukendt"}${data.cvrNumber ? ` (CVR ${data.cvrNumber})` : ""}
 Kundens email: ${data.customerEmail ?? "ukendt"}
-Ordrereference: ${data.orderReference ?? "ukendt"}
+Ordrereference: ${data.orderReference ?? "ukendt"}${externalCustomerNumberLine}
 
 Ordrelinjer (varenavne som hos Pido, til bestilling):
 ${formatItemsList(data.items, "sv")}

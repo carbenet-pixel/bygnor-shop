@@ -13,6 +13,7 @@ export type CustomerListItem = {
   individualDiscount: number | null;
   isActive: boolean;
   invoiceApproved: boolean;
+  externalCustomerNumber: string | null;
 };
 
 export async function listCustomers(): Promise<CustomerListItem[]> {
@@ -23,7 +24,7 @@ export async function listCustomers(): Promise<CustomerListItem[]> {
       supabaseAdmin
         .from("profiles")
         .select(
-          "id, company_name, payment_method, credit_limit, payment_terms_days, discount_group, individual_discount, is_active, invoice_approved",
+          "id, company_name, payment_method, credit_limit, payment_terms_days, discount_group, individual_discount, is_active, invoice_approved, external_customer_number",
         )
         .eq("role", "kunde")
         .order("company_name", { ascending: true }),
@@ -60,6 +61,7 @@ export async function listCustomers(): Promise<CustomerListItem[]> {
     individualDiscount: p.individual_discount as number | null,
     isActive: p.is_active as boolean,
     invoiceApproved: p.invoice_approved as boolean,
+    externalCustomerNumber: p.external_customer_number as string | null,
   }));
 }
 
@@ -80,7 +82,7 @@ export async function getCustomer(id: string): Promise<CustomerDetail | null> {
       supabaseAdmin
         .from("profiles")
         .select(
-          "id, role, company_name, payment_method, credit_limit, payment_terms_days, discount_group, individual_discount, is_active, invoice_approved",
+          "id, role, company_name, payment_method, credit_limit, payment_terms_days, discount_group, individual_discount, is_active, invoice_approved, external_customer_number",
         )
         .eq("id", id)
         .single(),
@@ -110,6 +112,7 @@ export async function getCustomer(id: string): Promise<CustomerDetail | null> {
     individualDiscount: profile.individual_discount as number | null,
     isActive: profile.is_active as boolean,
     invoiceApproved: profile.invoice_approved as boolean,
+    externalCustomerNumber: profile.external_customer_number as string | null,
   };
 }
 
@@ -122,6 +125,7 @@ export type UpdateCustomerInput = {
   paymentMethod: string;
   creditLimit: number | null;
   paymentTermsDays: number | null;
+  externalCustomerNumber: string | null;
 };
 
 export async function updateCustomer(
@@ -137,6 +141,7 @@ export async function updateCustomer(
   const update: Record<string, unknown> = {
     is_active: input.isActive,
     invoice_approved: input.invoiceApproved,
+    external_customer_number: input.externalCustomerNumber,
   };
 
   if (validGroupIds.has(input.discountGroup)) {

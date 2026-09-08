@@ -95,6 +95,7 @@ export default async function AdminOrdersPage({
               <tr>
                 <th className={cellClass}>Ordrereference</th>
                 <th className={cellClass}>Kunde</th>
+                <th className={cellClass}>Eksternt kundenr.</th>
                 <th className={cellClass}>Dato</th>
                 <th className={cellClass}>Betaling</th>
                 <th className={cellClass}>Betalingsstatus</th>
@@ -118,6 +119,9 @@ export default async function AdminOrdersPage({
                   </td>
                   <td className={`${cellClass} text-slate-500`}>
                     {order.customerName ?? "—"}
+                  </td>
+                  <td className={`${cellClass} text-slate-500`}>
+                    {order.externalCustomerNumber ?? ""}
                   </td>
                   <td className={`${cellClass} text-slate-500`}>
                     {formatDate(order.createdAt)}

@@ -108,6 +108,21 @@ export default async function CustomerDetailPage({
           />
         </div>
 
+        <div>
+          <label htmlFor="externalCustomerNumber" className={labelClass}>
+            Eksternt kundenummer (KNI/Aarhus-fragt)
+          </label>
+          <input
+            form={formId}
+            id="externalCustomerNumber"
+            type="text"
+            name="externalCustomerNumber"
+            placeholder="Valgfrit"
+            defaultValue={customer.externalCustomerNumber ?? ""}
+            className={inputClass}
+          />
+        </div>
+
         <div className="flex items-center gap-2">
           <input
             form={formId}

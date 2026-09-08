@@ -71,6 +71,10 @@ export default async function OrderDetailPage({
             <p className="text-sm text-slate-500">CVR {order.cvrNumber}</p>
           )}
           <p className="text-sm text-slate-500">{order.customerEmail ?? "—"}</p>
+          <div className="mt-3">
+            <span className={labelClass}>Eksternt kundenummer (KNI/Aarhus-fragt)</span>
+            <p className="text-sm text-slate-900">{order.externalCustomerNumber ?? ""}</p>
+          </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
