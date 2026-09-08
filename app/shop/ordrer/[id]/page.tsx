@@ -23,7 +23,7 @@ export default async function CustomerOrderDetailPage({
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <Link
-        href="/shop/ordrer"
+        href="/shop/konto/ordrer"
         className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
       >
         ← Tilbage til mine ordrer

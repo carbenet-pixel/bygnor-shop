@@ -49,8 +49,8 @@ export default async function ShopLayout({
                 Admin →
               </Link>
             )}
-            <Link href="/shop/ordrer" className="hover:text-[#185FA5]">
-              Mine ordrer
+            <Link href="/shop/konto" className="hover:text-[#185FA5]">
+              Min konto
             </Link>
             <Link
               href="/shop/kurv"
