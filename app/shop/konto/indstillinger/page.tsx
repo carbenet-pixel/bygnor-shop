@@ -1,6 +1,7 @@
 import { getOwnAccountInfo } from "@/lib/account";
 import { createClient } from "@/lib/supabase/server";
 import { ChangePasswordForm } from "./change-password-form";
+import { UpdatePhoneForm } from "./update-phone-form";
 import { resetOwnMfaAction } from "./actions";
 
 export const dynamic = "force-dynamic";
@@ -44,6 +45,11 @@ export default async function KontoIndstillingerPage() {
             {account.externalCustomerNumber ?? "—"}
           </p>
         </div>
+      </div>
+
+      <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+        <h2 className="mb-4 text-sm font-semibold text-slate-900">Telefonnummer</h2>
+        <UpdatePhoneForm initialPhone={account.phone} />
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

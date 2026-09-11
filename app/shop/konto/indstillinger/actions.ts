@@ -2,8 +2,34 @@
 
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { updateOwnPhone } from "@/lib/account";
 
 export type ChangePasswordState = { error: string | null; success: boolean };
+
+export type UpdatePhoneState = { error: string | null; success: boolean };
+
+/**
+ * Eneste kontaktoplysning kunden selv må redigere — firma/CVR/rabat/
+ * betalingsmetode forbliver read-only (admin-redigeret, se
+ * app/admin/customers/[id]). Simpel validering: kun ikke-tomt krævet.
+ */
+export async function updatePhoneAction(
+  _prevState: UpdatePhoneState,
+  formData: FormData,
+): Promise<UpdatePhoneState> {
+  const phone = ((formData.get("phone") as string) ?? "").trim();
+
+  if (!phone) {
+    return { error: "Telefonnummer må ikke være tomt.", success: false };
+  }
+
+  const result = await updateOwnPhone(phone);
+  if (!result.success) {
+    return { error: result.error ?? "Kunne ikke opdatere telefonnummer.", success: false };
+  }
+
+  return { error: null, success: true };
+}
 
 /**
  * Ingen bekræftelse af nuværende kodeord — sessionen er allerede
