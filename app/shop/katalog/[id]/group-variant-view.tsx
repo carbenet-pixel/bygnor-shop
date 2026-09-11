@@ -17,12 +17,16 @@ export function GroupVariantView({
   members,
   initialSelectedId,
   salesEmail,
+  backHref,
+  backQueryString,
 }: {
   groupName: string;
   categoryName: string;
   members: ProductGroupMember[];
   initialSelectedId: string;
   salesEmail: string | null;
+  backHref: string;
+  backQueryString: string;
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(initialSelectedId);
@@ -31,7 +35,7 @@ export function GroupVariantView({
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
       <Link
-        href="/shop/katalog"
+        href={backHref}
         className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
       >
         ← Tilbage til katalog
@@ -70,7 +74,10 @@ export function GroupVariantView({
                 onChange={(e) => {
                   const nextId = e.target.value;
                   setSelectedId(nextId);
-                  router.replace(`/shop/katalog/${nextId}`, { scroll: false });
+                  const nextUrl = backQueryString
+                    ? `/shop/katalog/${nextId}?${backQueryString}`
+                    : `/shop/katalog/${nextId}`;
+                  router.replace(nextUrl, { scroll: false });
                 }}
                 className={inputClass}
               >

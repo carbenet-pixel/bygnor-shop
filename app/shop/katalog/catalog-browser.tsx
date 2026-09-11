@@ -13,9 +13,11 @@ const inputClass =
 function GroupCard({
   group,
   matchedProductId,
+  catalogQueryString,
 }: {
   group: CatalogGroup;
   matchedProductId?: string;
+  catalogQueryString: string;
 }) {
   const pricedMembers = group.products.filter((p) => p.basePrice != null);
   const minPrice =
@@ -30,10 +32,13 @@ function GroupCard({
   const linkTargetId = matchedProductId ?? group.products[0].id;
   const representative =
     group.products.find((p) => p.id === linkTargetId) ?? group.products[0];
+  const href = catalogQueryString
+    ? `/shop/katalog/${linkTargetId}?${catalogQueryString}`
+    : `/shop/katalog/${linkTargetId}`;
 
   return (
     <Link
-      href={`/shop/katalog/${linkTargetId}`}
+      href={href}
       className="group block rounded-xl border border-slate-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md"
     >
       <ProductImage
@@ -125,6 +130,17 @@ export function CatalogBrowser({
 
   const totalMatches = filtered.reduce((sum, c) => sum + c.groups.length, 0);
 
+  // Sendes med som query-parametre når man klikker ind på et produkt, så
+  // "Tilbage til katalog" på produktsiden kan lande brugeren samme sted i
+  // stedet for standardvisningen — se app/shop/katalog/[id]/page.tsx.
+  const catalogQueryString = useMemo(() => {
+    const params = new URLSearchParams();
+    if (categoryId !== "alle") params.set("avdeling", categoryId);
+    if (subcategoryId !== "alle") params.set("underkategori", subcategoryId);
+    if (query.trim()) params.set("q", query);
+    return params.toString();
+  }, [categoryId, subcategoryId, query]);
+
   // Rent visuelt inspirationsbillede — kun når én bestemt underkategori er
   // valgt (ikke "alle", hvor flere emner ville blande sig), og kun hvis den
   // rent faktisk har fået sat et. Ikke klikbart, ingen tekst ovenpå.
@@ -204,6 +220,7 @@ export function CatalogBrowser({
                   key={group.id}
                   group={group}
                   matchedProductId={matchedProductId}
+                  catalogQueryString={catalogQueryString}
                 />
               ))}
             </div>
