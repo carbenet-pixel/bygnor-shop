@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getCart } from "@/lib/cart";
 import { isInvoiceApproved } from "@/lib/checkout";
 import { getCustomerDiscount } from "@/lib/discount-groups";
+import { validateCampaignCode, computeLineDiscount } from "@/lib/campaign-codes";
 import { listAddresses } from "@/lib/delivery-addresses";
 import { formatPrice, roundCurrency, displayName } from "@/lib/format";
 import { ProductImage } from "../product-image";
@@ -15,8 +16,15 @@ import { DeliveryAddressFields } from "./delivery-address-fields";
 export const dynamic = "force-dynamic";
 
 const cellClass = "px-4 py-3 align-middle";
+const inputClass =
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
 
-export default async function CartPage() {
+export default async function CartPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ campaign?: string }>;
+}) {
+  const { campaign } = await searchParams;
   const supabase = await createClient();
   const {
     data: { user },
@@ -28,6 +36,15 @@ export default async function CartPage() {
     getCustomerDiscount(),
     user ? listAddresses(user.id) : Promise.resolve([]),
   ]);
+
+  // Valideres server-side ved hvert besøg — aldrig via klientens egen
+  // session (se lib/campaign-codes.ts). Et ugyldigt/udløbet felt vises
+  // som fejl her, men blokerer ikke resten af kurvvisningen.
+  const campaignValidation = campaign ? await validateCampaignCode(campaign) : null;
+  const campaignCode =
+    campaignValidation && campaignValidation.valid ? campaignValidation.campaignCode : null;
+  const campaignError =
+    campaignValidation && !campaignValidation.valid ? campaignValidation.error : null;
 
   if (cart.items.length === 0) {
     return (
@@ -62,15 +79,39 @@ export default async function CartPage() {
   const itemsWithoutPrice = cart.items.filter((item) => item.basePrice == null);
   const pricedItems = cart.items.filter((item) => item.basePrice != null);
 
+  // Pr. linje: den bedste af kundens eget rabatniveau og kampagnekoden (hvis
+  // en gyldig kode er indtastet og gælder linjens leverandør) — se
+  // computeLineDiscount. Aldrig lagt sammen, altid den laveste pris der vinder.
+  const lineDiscounts = new Map(
+    pricedItems.map((item) => [
+      item.id,
+      computeLineDiscount(item.basePrice!, item.vendorId, discount.percent, campaignCode),
+    ]),
+  );
+
   const normalTotal = pricedItems.reduce(
     (sum, item) => sum + item.basePrice! * item.quantity,
     0,
   );
   const discountedTotal = pricedItems.reduce((sum, item) => {
-    const discountedUnit = roundCurrency(item.basePrice! * (1 - discount.percent / 100));
-    return sum + discountedUnit * item.quantity;
+    const line = lineDiscounts.get(item.id)!;
+    return sum + line.unitPrice * item.quantity;
   }, 0);
   const discountTotal = roundCurrency(normalTotal - discountedTotal);
+  const campaignDiscountTotal = roundCurrency(
+    pricedItems.reduce((sum, item) => {
+      const line = lineDiscounts.get(item.id)!;
+      return sum + (line.usedCampaign ? line.campaignDiscountPerUnit * item.quantity : 0);
+    }, 0),
+  );
+  const customerDiscountTotal = roundCurrency(discountTotal - campaignDiscountTotal);
+
+  const linesWithCampaignDiscount = pricedItems.filter(
+    (item) => lineDiscounts.get(item.id)!.usedCampaign,
+  ).length;
+  // Koden er gyldig, men rammer ingen af leverandørerne i kurven lige nu —
+  // ikke en fejl, bare ingen effekt (jf. kravet i prompten).
+  const campaignHasNoEffect = campaignCode != null && linesWithCampaignDiscount === 0;
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -96,10 +137,8 @@ export default async function CartPage() {
           <tbody className="divide-y divide-slate-100">
             {cart.items.map((item) => {
               const formId = `cart-item-${item.id}`;
-              const discountedUnit =
-                item.basePrice != null
-                  ? roundCurrency(item.basePrice * (1 - discount.percent / 100))
-                  : null;
+              const line = lineDiscounts.get(item.id) ?? null;
+              const discountedUnit = line?.unitPrice ?? null;
               const lineRabat =
                 item.basePrice != null && discountedUnit != null
                   ? roundCurrency((item.basePrice - discountedUnit) * item.quantity)
@@ -155,7 +194,7 @@ export default async function CartPage() {
                       <span className="text-emerald-700">
                         -{formatPrice(lineRabat)}
                         <span className="block text-xs text-slate-400">
-                          ({discount.label})
+                          ({line?.usedCampaign ? `Kampagnekode ${campaignCode?.code}` : discount.label})
                         </span>
                       </span>
                     )}
@@ -209,9 +248,14 @@ export default async function CartPage() {
             <p className="text-sm text-slate-500">
               Normalpris i alt: {formatPrice(normalTotal)}
             </p>
-            {discountTotal > 0 && (
+            {customerDiscountTotal > 0 && (
               <p className="text-sm text-emerald-700">
-                Rabat ({discount.label}): -{formatPrice(discountTotal)}
+                Rabat ({discount.label}): -{formatPrice(customerDiscountTotal)}
+              </p>
+            )}
+            {campaignDiscountTotal > 0 && (
+              <p className="text-sm text-emerald-700">
+                Kampagnerabat ({campaignCode?.code}): -{formatPrice(campaignDiscountTotal)}
               </p>
             )}
             <p className="text-lg font-semibold text-slate-900">
@@ -220,12 +264,61 @@ export default async function CartPage() {
           </>
         )}
 
+        <div className="mt-4 w-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <h2 className="mb-3 text-sm font-semibold text-slate-900">Kampagnekode</h2>
+          <form action="/shop/kurv" method="GET" className="flex gap-2">
+            <input
+              type="text"
+              name="campaign"
+              placeholder="Indtast kode"
+              defaultValue={campaign ?? ""}
+              className={inputClass}
+            />
+            <button
+              type="submit"
+              className="shrink-0 rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+            >
+              Anvend
+            </button>
+          </form>
+
+          {campaignError && (
+            <p className="mt-2 text-sm text-red-600">{campaignError}</p>
+          )}
+          {campaignCode && campaignHasNoEffect && (
+            <p className="mt-2 text-sm text-amber-600">
+              Koden {campaignCode.code} er gyldig, men gælder ikke nogen af varerne i din kurv
+              lige nu.
+            </p>
+          )}
+          {campaignCode && linesWithCampaignDiscount > 0 && (
+            <p className="mt-2 text-sm text-emerald-700">
+              Koden {campaignCode.code} gav rabat på {linesWithCampaignDiscount}{" "}
+              {linesWithCampaignDiscount === 1 ? "vare" : "varer"} i kurven
+              {linesWithCampaignDiscount < pricedItems.length
+                ? " (gælder ikke resten, se rabat-kolonnen pr. linje)"
+                : ""}
+              .
+            </p>
+          )}
+        </div>
+
         <div className="mt-4 w-full">
           <DeliveryAddressFields
             defaultAddress={defaultAddress}
             targetFormIds={[CARD_CHECKOUT_FORM_ID, INVOICE_CHECKOUT_FORM_ID]}
           />
         </div>
+
+        {[CARD_CHECKOUT_FORM_ID, INVOICE_CHECKOUT_FORM_ID].map((formId) => (
+          <input
+            key={formId}
+            type="hidden"
+            form={formId}
+            name="campaignCode"
+            value={campaignCode?.code ?? ""}
+          />
+        ))}
 
         <CheckoutButton />
         {invoiceApproved ? (

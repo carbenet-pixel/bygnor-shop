@@ -9,6 +9,7 @@ const navItems = [
   { href: "/admin/customers", label: "Kunder" },
   { href: "/admin/customers/new", label: "Opret kunde" },
   { href: "/admin/products", label: "Produkter" },
+  { href: "/admin/campaign-codes", label: "Kampagnekoder" },
 ];
 
 export default async function AdminLayout({

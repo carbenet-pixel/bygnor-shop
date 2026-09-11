@@ -10,6 +10,7 @@ export type CartItem = {
   nameDa: string | null;
   imageUrl: string | null;
   basePrice: number | null;
+  vendorId: string | null;
   quantity: number;
 };
 
@@ -106,7 +107,7 @@ export async function getCart(): Promise<Cart> {
   const { data, error } = await supabase
     .from("cart_items")
     .select(
-      "id, product_id, quantity, products(sku, name, name_da, image_url, base_price, product_group_id, image_subgroup_key)",
+      "id, product_id, quantity, products(sku, name, name_da, image_url, base_price, vendor_id, product_group_id, image_subgroup_key)",
     )
     .eq("cart_id", cartId)
     .order("created_at");
@@ -122,6 +123,7 @@ export async function getCart(): Promise<Cart> {
     name_da: string | null;
     image_url: string | null;
     base_price: number | null;
+    vendor_id: string | null;
     product_group_id: string;
     image_subgroup_key: string;
   };
@@ -157,6 +159,7 @@ export async function getCart(): Promise<Cart> {
             ) ?? null)
           : null),
       basePrice: product?.base_price ?? null,
+      vendorId: product?.vendor_id ?? null,
       quantity: row.quantity as number,
     })),
   };

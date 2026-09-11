@@ -8,6 +8,11 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { listAddresses, type DeliveryAddress } from "@/lib/delivery-addresses";
 import { getCart, type CartItem } from "@/lib/cart";
 import { getCustomerDiscount } from "@/lib/discount-groups";
+import {
+  validateCampaignCode,
+  computeLineDiscount,
+  type ValidatedCampaignCode,
+} from "@/lib/campaign-codes";
 import { createPaymentAndLink } from "@/lib/quickpay";
 import { sendInvoiceOrderNotification, sendOrderConfirmation } from "@/lib/order-mail";
 import { roundCurrency } from "@/lib/format";
@@ -79,6 +84,30 @@ function resolveDeliveryAddress(
   };
 }
 
+/**
+ * Læser kampagnekode-feltet fra formularen (samme skjulte-input-mønster som
+ * leveringsadressen, se delivery-address-fields.tsx) og validerer den
+ * server-side — aldrig via klientens egen session (campaign_codes har intet
+ * grant til authenticated, se migration 0027). Tomt felt = ingen kode,
+ * ikke en fejl. En UGYLDIG kode afviser derimod hele checkout'en med en
+ * tydelig besked, jf. kravet om at kunden aldrig stille mister rabatten.
+ */
+async function resolveCampaignCode(
+  formData: FormData,
+): Promise<{ campaignCode: ValidatedCampaignCode | null } | { error: string }> {
+  const raw = ((formData.get("campaignCode") as string) ?? "").trim();
+  if (!raw) {
+    return { campaignCode: null };
+  }
+
+  const result = await validateCampaignCode(raw);
+  if (!result.valid) {
+    return { error: result.error };
+  }
+
+  return { campaignCode: result.campaignCode };
+}
+
 async function createOrderWithReference(
   supabase: SupabaseServerClient,
   input: {
@@ -89,6 +118,7 @@ async function createOrderWithReference(
     totalAmount: number | null;
     discountPercent: number;
     discountLabel: string;
+    campaignCodeSnapshot: string | null;
   },
 ): Promise<{ orderId: string; orderReference: string } | { error: string }> {
   let orderReference = generateOrderReference();
@@ -122,6 +152,7 @@ async function createOrderWithReference(
         discount_percent: input.discountPercent,
         discount_label: input.discountLabel,
         external_customer_number_snapshot: externalCustomerNumberSnapshot,
+        campaign_code_snapshot: input.campaignCodeSnapshot,
       })
       .select("id")
       .single();
@@ -140,31 +171,57 @@ async function createOrderWithReference(
 }
 
 /**
- * Beregner rabatteret pris pr. linje (base_price_snapshot = normalpris,
+ * Beregner rabatteret pris PR. LINJE (base_price_snapshot = normalpris,
  * unit_price_snapshot = det kunden reelt betaler) og indsætter ordrelinjerne.
- * Varer uden base_price ("pris oplyses snarest") får fortsat ingen pris —
- * intet at beregne rabat på.
+ * Hver linje får den bedste af kundens eget rabatniveau og en evt.
+ * kampagnekode (se computeLineDiscount) — kampagne-andelen af rabatten
+ * gemmes separat i campaign_discount_snapshot, samme fastfrysningsprincip
+ * som sku_snapshot, så en senere redigering/udløb af koden ikke ændrer
+ * historiske ordrer. Varer uden base_price ("pris oplyses snarest") får
+ * fortsat ingen pris — intet at beregne rabat på.
  */
 async function insertOrderItems(
   supabase: SupabaseServerClient,
   orderId: string,
   items: CartItem[],
-  discountPercent: number,
+  customerDiscountPercent: number,
+  campaignCode: ValidatedCampaignCode | null,
 ): Promise<string | null> {
   const { error } = await supabase.from("order_items").insert(
-    items.map((item) => ({
-      order_id: orderId,
-      product_id: item.productId,
-      sku_snapshot: item.sku,
-      name_snapshot: item.name,
-      name_snapshot_da: item.nameDa,
-      base_price_snapshot: item.basePrice,
-      unit_price_snapshot:
-        item.basePrice != null
-          ? roundCurrency(item.basePrice * (1 - discountPercent / 100))
-          : null,
-      quantity: item.quantity,
-    })),
+    items.map((item) => {
+      if (item.basePrice == null) {
+        return {
+          order_id: orderId,
+          product_id: item.productId,
+          sku_snapshot: item.sku,
+          name_snapshot: item.name,
+          name_snapshot_da: item.nameDa,
+          base_price_snapshot: null,
+          unit_price_snapshot: null,
+          campaign_discount_snapshot: null,
+          quantity: item.quantity,
+        };
+      }
+
+      const line = computeLineDiscount(
+        item.basePrice,
+        item.vendorId,
+        customerDiscountPercent,
+        campaignCode,
+      );
+
+      return {
+        order_id: orderId,
+        product_id: item.productId,
+        sku_snapshot: item.sku,
+        name_snapshot: item.name,
+        name_snapshot_da: item.nameDa,
+        base_price_snapshot: item.basePrice,
+        unit_price_snapshot: line.unitPrice,
+        campaign_discount_snapshot: line.usedCampaign ? line.campaignDiscountPerUnit : null,
+        quantity: item.quantity,
+      };
+    }),
   );
 
   if (error) {
@@ -174,14 +231,23 @@ async function insertOrderItems(
   return null;
 }
 
-function computeDiscountedTotal(items: CartItem[], discountPercent: number): number | null {
+function computeDiscountedTotal(
+  items: CartItem[],
+  customerDiscountPercent: number,
+  campaignCode: ValidatedCampaignCode | null,
+): number | null {
   const pricedItems = items.filter((item) => item.basePrice != null);
   if (pricedItems.length === 0) return null;
 
   return roundCurrency(
     pricedItems.reduce((sum, item) => {
-      const discountedUnit = roundCurrency(item.basePrice! * (1 - discountPercent / 100));
-      return sum + discountedUnit * item.quantity;
+      const line = computeLineDiscount(
+        item.basePrice!,
+        item.vendorId,
+        customerDiscountPercent,
+        campaignCode,
+      );
+      return sum + line.unitPrice * item.quantity;
     }, 0),
   );
 }
@@ -226,8 +292,14 @@ export async function initiateCardCheckoutAction(
     return { error: resolved.error };
   }
 
+  const campaignResolved = await resolveCampaignCode(formData);
+  if ("error" in campaignResolved) {
+    return { error: campaignResolved.error };
+  }
+  const { campaignCode } = campaignResolved;
+
   const discount = await getCustomerDiscount();
-  const totalAmount = computeDiscountedTotal(cart.items, discount.percent);
+  const totalAmount = computeDiscountedTotal(cart.items, discount.percent, campaignCode);
   if (totalAmount == null) {
     return { error: "Kunne ikke beregne et beløb for kurven." };
   }
@@ -240,13 +312,20 @@ export async function initiateCardCheckoutAction(
     totalAmount,
     discountPercent: discount.percent,
     discountLabel: discount.label,
+    campaignCodeSnapshot: campaignCode?.code ?? null,
   });
   if ("error" in created) {
     return { error: created.error };
   }
   const { orderId, orderReference } = created;
 
-  const itemsError = await insertOrderItems(supabase, orderId, cart.items, discount.percent);
+  const itemsError = await insertOrderItems(
+    supabase,
+    orderId,
+    cart.items,
+    discount.percent,
+    campaignCode,
+  );
   if (itemsError) {
     return { error: itemsError };
   }
@@ -318,8 +397,14 @@ export async function initiateInvoiceCheckoutAction(
     return { error: resolved.error };
   }
 
+  const campaignResolved = await resolveCampaignCode(formData);
+  if ("error" in campaignResolved) {
+    return { error: campaignResolved.error };
+  }
+  const { campaignCode } = campaignResolved;
+
   const discount = await getCustomerDiscount();
-  const totalAmount = computeDiscountedTotal(cart.items, discount.percent);
+  const totalAmount = computeDiscountedTotal(cart.items, discount.percent, campaignCode);
 
   const created = await createOrderWithReference(supabase, {
     customerId: user.id,
@@ -329,13 +414,20 @@ export async function initiateInvoiceCheckoutAction(
     totalAmount,
     discountPercent: discount.percent,
     discountLabel: discount.label,
+    campaignCodeSnapshot: campaignCode?.code ?? null,
   });
   if ("error" in created) {
     return { error: created.error };
   }
   const { orderId, orderReference } = created;
 
-  const itemsError = await insertOrderItems(supabase, orderId, cart.items, discount.percent);
+  const itemsError = await insertOrderItems(
+    supabase,
+    orderId,
+    cart.items,
+    discount.percent,
+    campaignCode,
+  );
   if (itemsError) {
     return { error: itemsError };
   }
