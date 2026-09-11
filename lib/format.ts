@@ -28,6 +28,21 @@ export function displayName(item: { name: string; nameDa: string | null }): stri
   return item.nameDa ?? item.name;
 }
 
+/**
+ * mailto-link til "Kontakt os for tilbud" (price_on_request-produkter) —
+ * emailadressen selv skal hentes server-side (lib/contact.ts, ikke
+ * NEXT_PUBLIC_-prefikset), men selve subject-opbygningen er ren
+ * strengmanipulation og deles derfor her mellem server- og client-brug.
+ */
+export function buildQuoteRequestMailto(
+  email: string,
+  sku: string,
+  name: string,
+): string {
+  const subject = encodeURIComponent(`Prisforespørgsel: ${sku} – ${name}`);
+  return `mailto:${email}?subject=${subject}`;
+}
+
 export function formatDate(iso: string): string {
   return new Intl.DateTimeFormat("da-DK", {
     dateStyle: "short",

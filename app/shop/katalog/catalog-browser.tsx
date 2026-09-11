@@ -21,6 +21,10 @@ function GroupCard({
     pricedMembers.length > 0
       ? Math.min(...pricedMembers.map((p) => p.basePrice!))
       : null;
+  // Kun relevant når INGEN varianter har en pris — findes bare én prissat
+  // variant, viser kortet "Fra X kr" som normalt.
+  const onlyPriceOnRequest =
+    minPrice == null && group.products.some((p) => p.priceOnRequest);
 
   const linkTargetId = matchedProductId ?? group.products[0].id;
   const representative =
@@ -50,7 +54,11 @@ function GroupCard({
             : "mt-1 text-sm font-semibold text-slate-900"
         }
       >
-        {minPrice == null ? "Pris oplyses snarest" : `Fra ${formatPrice(minPrice)}`}
+        {minPrice != null
+          ? `Fra ${formatPrice(minPrice)}`
+          : onlyPriceOnRequest
+            ? "Kontakt os for tilbud"
+            : "Pris oplyses snarest"}
       </p>
     </Link>
   );

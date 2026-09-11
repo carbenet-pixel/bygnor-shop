@@ -178,6 +178,21 @@ export async function addToCart(
     return { success: false, error: "Ikke logget ind." };
   }
 
+  // UI'et skjuler allerede "Læg i kurv" for price_on_request-produkter —
+  // dette er kun et sikkerhedsnet mod et direkte kald uden om UI'et.
+  const { data: product } = await supabase
+    .from("products")
+    .select("price_on_request")
+    .eq("id", productId)
+    .maybeSingle();
+
+  if (product?.price_on_request) {
+    return {
+      success: false,
+      error: "Dette produkt kræver et tilbud — kontakt os i stedet for at lægge det i kurven.",
+    };
+  }
+
   let cartId = await findCartId(supabase, userId);
 
   if (!cartId) {

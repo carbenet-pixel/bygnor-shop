@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { getProductGroupDetail } from "@/lib/catalog";
+import { getSalesContactEmail } from "@/lib/contact";
 import { GroupVariantView } from "./group-variant-view";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export default async function ProductDetailPage({
       categoryName={result.categoryName}
       members={result.members}
       initialSelectedId={id}
+      salesEmail={getSalesContactEmail()}
     />
   );
 }

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import type { ProductGroupMember } from "@/lib/catalog";
-import { formatPrice, displayName } from "@/lib/format";
+import { formatPrice, displayName, buildQuoteRequestMailto } from "@/lib/format";
 import { ProductImage } from "../../product-image";
 import { AddToCartForm } from "./add-to-cart-form";
 
@@ -16,11 +16,13 @@ export function GroupVariantView({
   categoryName,
   members,
   initialSelectedId,
+  salesEmail,
 }: {
   groupName: string;
   categoryName: string;
   members: ProductGroupMember[];
   initialSelectedId: string;
+  salesEmail: string | null;
 }) {
   const router = useRouter();
   const [selectedId, setSelectedId] = useState(initialSelectedId);
@@ -48,6 +50,11 @@ export function GroupVariantView({
           <h1 className="mt-1 mb-1 text-xl font-semibold text-slate-900">
             {groupName}
           </h1>
+          {selected.catalogPage != null && (
+            <p className="mb-3 text-xs text-slate-400">
+              Katalogside {selected.catalogPage}
+            </p>
+          )}
 
           {members.length > 1 && (
             <div className="mb-4">
@@ -88,18 +95,36 @@ export function GroupVariantView({
             <p className="mb-4 text-sm text-slate-600">{selected.description}</p>
           )}
 
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-            <span
-              className={
-                selected.basePrice == null
-                  ? "text-sm text-slate-400 italic"
-                  : "text-lg font-semibold text-slate-900"
-              }
-            >
-              {formatPrice(selected.basePrice)}
-            </span>
-            <AddToCartForm key={selected.id} productId={selected.id} />
-          </div>
+          {selected.priceOnRequest ? (
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <span className="text-sm text-slate-500">Pris efter forespørgsel</span>
+              {salesEmail ? (
+                <a
+                  href={buildQuoteRequestMailto(salesEmail, selected.sku, displayName(selected))}
+                  className="rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+                >
+                  Kontakt os for tilbud
+                </a>
+              ) : (
+                <span className="text-sm text-slate-400 italic">
+                  Kontakt Bygnor for tilbud
+                </span>
+              )}
+            </div>
+          ) : (
+            <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+              <span
+                className={
+                  selected.basePrice == null
+                    ? "text-sm text-slate-400 italic"
+                    : "text-lg font-semibold text-slate-900"
+                }
+              >
+                {formatPrice(selected.basePrice)}
+              </span>
+              <AddToCartForm key={selected.id} productId={selected.id} />
+            </div>
+          )}
         </div>
       </div>
     </div>

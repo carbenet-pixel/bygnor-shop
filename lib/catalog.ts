@@ -8,6 +8,8 @@ export type CatalogProduct = {
   name: string;
   nameDa: string | null;
   basePrice: number | null;
+  priceOnRequest: boolean;
+  catalogPage: number | null;
   imageUrl: string | null;
   productGroupId: string;
   imageSubgroupKey: string;
@@ -72,6 +74,8 @@ function toCatalogProduct(row: Record<string, unknown>): CatalogProduct {
     name: row.name as string,
     nameDa: row.name_da as string | null,
     basePrice: row.base_price as number | null,
+    priceOnRequest: row.price_on_request as boolean,
+    catalogPage: row.catalog_page as number | null,
     imageUrl: row.image_url as string | null,
     productGroupId: row.product_group_id as string,
     imageSubgroupKey: row.image_subgroup_key as string,
@@ -100,7 +104,7 @@ export async function listCatalog(): Promise<CatalogCategory[]> {
     supabase
       .from("products")
       .select(
-        "id, sku, name, name_da, base_price, image_url, product_group_id, image_subgroup_key",
+        "id, sku, name, name_da, base_price, price_on_request, catalog_page, image_url, product_group_id, image_subgroup_key",
       )
       .order("sort_order"),
   ]);
@@ -376,7 +380,7 @@ export async function getProductGroupDetail(
       supabase
         .from("products")
         .select(
-          "id, sku, name, name_da, description, base_price, image_url, product_group_id, image_subgroup_key, stock_status, vendors(name)",
+          "id, sku, name, name_da, description, base_price, price_on_request, catalog_page, image_url, product_group_id, image_subgroup_key, stock_status, vendors(name)",
         )
         .eq("product_group_id", groupId)
         .order("sort_order"),
