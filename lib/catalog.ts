@@ -260,6 +260,30 @@ export async function getCategory(id: string): Promise<CategoryBasic | null> {
   return { id: data.id as string, name: data.name as string };
 }
 
+/**
+ * Inspirationsbillede pr. underkategori (fx Blomsterinredning) — et bredt,
+ * ren-visuelt hero-billede vist øverst på katalogsiden når netop den
+ * underkategori er valgt. Adskilt fra subcategories.image_url, som er
+ * kort-thumbnailen på /shop/afdeling/[id] og ikke røres her.
+ */
+export async function getSubcategoryHeroImages(): Promise<Record<string, string>> {
+  const supabase = await createClient();
+
+  const { data, error } = await supabase
+    .from("subcategories")
+    .select("id, category_hero_image_url")
+    .not("category_hero_image_url", "is", null);
+
+  if (error || !data) {
+    console.error("[getSubcategoryHeroImages]", error);
+    return {};
+  }
+
+  return Object.fromEntries(
+    data.map((s) => [s.id as string, s.category_hero_image_url as string]),
+  );
+}
+
 export type SubcategoryOverviewItem = {
   id: string;
   name: string;

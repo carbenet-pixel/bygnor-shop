@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { listCatalog } from "@/lib/catalog";
+import { listCatalog, getSubcategoryHeroImages } from "@/lib/catalog";
 import { CatalogBrowser } from "./catalog-browser";
 
 export const dynamic = "force-dynamic";
@@ -9,9 +9,10 @@ export default async function CatalogPage({
 }: {
   searchParams: Promise<{ avdeling?: string; underkategori?: string; q?: string }>;
 }) {
-  const [{ avdeling, underkategori, q }, categories] = await Promise.all([
+  const [{ avdeling, underkategori, q }, categories, subcategoryHeroImages] = await Promise.all([
     searchParams,
     listCatalog(),
+    getSubcategoryHeroImages(),
   ]);
 
   const initialCategoryId =
@@ -43,6 +44,7 @@ export default async function CatalogPage({
         initialCategoryId={initialCategoryId}
         initialSubcategoryId={initialSubcategoryId}
         initialQuery={q ?? ""}
+        subcategoryHeroImages={subcategoryHeroImages}
       />
     </div>
   );

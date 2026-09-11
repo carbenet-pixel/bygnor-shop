@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import type { CatalogCategory, CatalogGroup } from "@/lib/catalog";
 import { formatPrice, displayName } from "@/lib/format";
 import { ProductImage } from "../product-image";
@@ -71,11 +72,13 @@ export function CatalogBrowser({
   initialCategoryId = "alle",
   initialSubcategoryId = "alle",
   initialQuery = "",
+  subcategoryHeroImages = {},
 }: {
   categories: CatalogCategory[];
   initialCategoryId?: string;
   initialSubcategoryId?: string;
   initialQuery?: string;
+  subcategoryHeroImages?: Record<string, string>;
 }) {
   const [query, setQuery] = useState(initialQuery);
   const [categoryId, setCategoryId] = useState(initialCategoryId);
@@ -122,6 +125,12 @@ export function CatalogBrowser({
 
   const totalMatches = filtered.reduce((sum, c) => sum + c.groups.length, 0);
 
+  // Rent visuelt inspirationsbillede — kun når én bestemt underkategori er
+  // valgt (ikke "alle", hvor flere emner ville blande sig), og kun hvis den
+  // rent faktisk har fået sat et. Ikke klikbart, ingen tekst ovenpå.
+  const heroImageUrl =
+    subcategoryId !== "alle" ? subcategoryHeroImages[subcategoryId] : undefined;
+
   return (
     <div>
       <div className="mb-6 flex flex-col gap-3 sm:flex-row">
@@ -162,6 +171,18 @@ export function CatalogBrowser({
           </select>
         )}
       </div>
+
+      {heroImageUrl && (
+        <div className="relative mb-6 h-48 w-full overflow-hidden rounded-xl sm:h-64">
+          <Image
+            src={heroImageUrl}
+            alt=""
+            fill
+            sizes="100vw"
+            className="object-cover"
+          />
+        </div>
+      )}
 
       <p className="mb-6 text-sm text-slate-500">
         {totalMatches} {totalMatches === 1 ? "produkt" : "produkter"}
