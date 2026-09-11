@@ -48,6 +48,26 @@ export async function proxy(request: NextRequest) {
     return redirectResponse;
   };
 
+  // shop.bygnor.com's rod må aldrig vise den ustørte create-next-app-
+  // standardside til en besøgende — uindlogget sendes til /login,
+  // indlogget sendes videre til deres rolles landingsside. De mere
+  // detaljerede tjek (inaktiv konto, manglende profil, superadmin-kun
+  // undersider) sker allerede i /shop- og /admin-blokkene nedenfor, så en
+  // efterfølgende anmodning mod /shop eller /admin rammer dem uændret.
+  if (pathname === "/") {
+    if (!user) {
+      return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const role = await getUserRole(user.id);
+
+    if (role === "admin" || role === "superadmin") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+
+    return NextResponse.redirect(new URL("/shop", request.url));
+  }
+
   if (pathname.startsWith("/shop")) {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
@@ -95,5 +115,5 @@ export async function proxy(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/shop", "/shop/:path*", "/admin", "/admin/:path*"],
+  matcher: ["/", "/shop", "/shop/:path*", "/admin", "/admin/:path*"],
 };
