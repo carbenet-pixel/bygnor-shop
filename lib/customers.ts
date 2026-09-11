@@ -190,3 +190,62 @@ export async function updateCustomer(
 
   return { success: true };
 }
+
+/**
+ * Kun til admin-visning på kundens side — IKKE en del af CustomerDetail,
+ * da det ville kræve ét ekstra Admin API-kald pr. kunde på listCustomers()
+ * (listen), hvor det ikke er nødvendigt.
+ */
+export async function getCustomerMfaEnabled(customerId: string): Promise<boolean> {
+  const supabaseAdmin = createAdminClient();
+
+  const { data, error } = await supabaseAdmin.auth.admin.mfa.listFactors({
+    userId: customerId,
+  });
+
+  if (error) {
+    console.error("[getCustomerMfaEnabled]", error);
+    return false;
+  }
+
+  return data.factors.some((f) => f.factor_type === "totp");
+}
+
+export type ResetCustomerMfaResult = { success: boolean };
+
+/**
+ * En almindelig brugersession kan kun afmelde SIN EGEN MFA-faktor
+ * (supabase.auth.mfa.unenroll) — en anden brugers faktorer kan kun
+ * fjernes via Admin API'et, som her. deleteFactor() logger selv kunden
+ * ud af alle aktive sessioner, hvis faktoren var verificeret, så
+ * ændringen slår igennem med det samme, ikke først ved udløb. Næste
+ * login rammer login()'s listFactors()-tjek (app/login/page.tsx), som
+ * så sender kunden gennem /login/setup-2fa igen, præcis som en helt ny
+ * bruger.
+ */
+export async function resetCustomerMfa(customerId: string): Promise<ResetCustomerMfaResult> {
+  const supabaseAdmin = createAdminClient();
+
+  const { data, error } = await supabaseAdmin.auth.admin.mfa.listFactors({
+    userId: customerId,
+  });
+
+  if (error) {
+    console.error("[resetCustomerMfa] listFactors", error);
+    return { success: false };
+  }
+
+  let allSucceeded = true;
+  for (const factor of data.factors) {
+    const { error: deleteError } = await supabaseAdmin.auth.admin.mfa.deleteFactor({
+      id: factor.id,
+      userId: customerId,
+    });
+    if (deleteError) {
+      console.error("[resetCustomerMfa] deleteFactor", deleteError);
+      allSucceeded = false;
+    }
+  }
+
+  return { success: allSucceeded };
+}
