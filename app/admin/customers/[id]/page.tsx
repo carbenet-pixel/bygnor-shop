@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { getCustomer, getCustomerMfaEnabled } from "@/lib/customers";
+import { getCustomer } from "@/lib/customers";
+import { getUserMfaEnabled } from "@/lib/mfa-admin";
 import { getDiscountGroups } from "@/lib/discount-groups";
 import { listAddresses } from "@/lib/delivery-addresses";
 import { updateCustomerAction } from "../actions";
@@ -40,7 +41,7 @@ export default async function CustomerDetailPage({
     notFound();
   }
 
-  const mfaEnabled = await getCustomerMfaEnabled(customer.id);
+  const mfaEnabled = await getUserMfaEnabled(customer.id);
 
   const formId = `customer-detail-${customer.id}`;
   const defaultAddressFormId = `default-address-${customer.id}`;

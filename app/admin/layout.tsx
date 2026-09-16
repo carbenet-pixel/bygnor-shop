@@ -30,6 +30,7 @@ export default async function AdminLayout({
           { href: "/admin/discount-groups", label: "Rabatgrupper" },
           { href: "/admin/categories", label: "Kategorier" },
           { href: "/admin/product-groups", label: "Produktgrupper" },
+          { href: "/admin/users", label: "Brugere" },
         ]
       : navItems;
 

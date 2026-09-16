@@ -6,7 +6,7 @@ import {
   createAddress,
   setDefaultAddress,
 } from "@/lib/delivery-addresses";
-import { resetCustomerMfa } from "@/lib/customers";
+import { resetUserMfa } from "@/lib/mfa-admin";
 
 function str(formData: FormData, name: string): string {
   return ((formData.get(name) as string) ?? "").trim();
@@ -70,6 +70,6 @@ export async function resetCustomerMfaAction(formData: FormData) {
 
   if (!customerId) return;
 
-  await resetCustomerMfa(customerId);
+  await resetUserMfa(customerId);
   revalidatePath(`/admin/customers/${customerId}`);
 }
