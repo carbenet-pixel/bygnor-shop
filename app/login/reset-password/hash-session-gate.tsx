@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { ResetPasswordForm } from "./reset-password-form";
 
@@ -12,36 +12,61 @@ type Status = "checking" | "ready" | "invalid";
  * i stedet for en ?code=-query-parameter. Hash-fragmenter sendes aldrig til
  * serveren, så dette kan kun afgøres client-side.
  *
- * createClient() har detectSessionInUrl slået til som standard (kun i
- * browseren) — den fanger og udveksler hash-tokens automatisk ved
- * initialisering, og skriver sessionen til cookies. Vi venter blot på
- * resultatet.
+ * createClient() (@supabase/ssr) hardkoder flowType:"pkce", og GoTrue-js's
+ * egen automatiske detectSessionInUrl afviser derfor denne slags
+ * hash-fragment-links med AuthPKCEGrantCodeExchangeError ("Not a valid PKCE
+ * flow url."), FØR den når at læse access_token/refresh_token ud — der
+ * bliver aldrig etableret en session, og fejlen "sluges" stille af klienten.
+ * Vi parser derfor selv access_token/refresh_token fra hash'en og kalder
+ * setSession() direkte, som ikke har dette flowType/URL-formats-tjek.
  */
 export function HashSessionGate() {
   const [status, setStatus] = useState<Status>("checking");
+  // Hash-fragmentet kan kun konsumeres én gang — vi rydder det med det
+  // samme, så et andet kald (fx React Strict Mode's bevidste
+  // dobbelt-kørsel af effects i dev) ikke finder tokens der allerede er
+  // fjernet fra URL'en og fejlagtigt overskriver en gyldig session med
+  // "invalid". Denne ref sikrer at selve konsumeringen kun sker én gang
+  // pr. side-indlæsning, uanset hvor mange gange effekten køres.
+  const hasRunRef = useRef(false);
 
   useEffect(() => {
-    const supabase = createClient();
-    let cancelled = false;
+    if (hasRunRef.current) return;
+    hasRunRef.current = true;
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (!cancelled) {
-        setStatus(session ? "ready" : "invalid");
+    async function establishSessionFromHash() {
+      const rawHash = window.location.hash;
+      const params = new URLSearchParams(
+        rawHash.startsWith("#") ? rawHash.slice(1) : rawHash,
+      );
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+
+      if (rawHash) {
+        // Fjern tokens fra adresselinjen/historikken med det samme, uanset
+        // om de viser sig gyldige eller ej.
+        window.history.replaceState(
+          window.history.state,
+          "",
+          window.location.pathname + window.location.search,
+        );
       }
-    });
 
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
-      if (event === "SIGNED_IN" && session && !cancelled) {
-        setStatus("ready");
+      if (!accessToken || !refreshToken) {
+        setStatus("invalid");
+        return;
       }
-    });
 
-    return () => {
-      cancelled = true;
-      subscription.unsubscribe();
-    };
+      const supabase = createClient();
+      const { data, error } = await supabase.auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      setStatus(!error && data.session ? "ready" : "invalid");
+    }
+
+    establishSessionFromHash();
   }, []);
 
   if (status === "checking") {
