@@ -80,6 +80,12 @@ export async function resetPassword(
         needsMfa: false,
       };
     }
+    if (updateError.code === "same_password") {
+      return {
+        error: "Det nye kodeord skal være anderledes end dit nuværende kodeord",
+        needsMfa: false,
+      };
+    }
     if (updateError.code === "insufficient_aal") {
       // Kontoen har to-faktor login aktiveret — bed om koden i stedet for at
       // afvise. Kodeordet er allerede indtastet og bevares af formularen.
