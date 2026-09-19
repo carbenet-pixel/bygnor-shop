@@ -85,6 +85,19 @@ function resolveDeliveryAddress(
 }
 
 /**
+ * Håndhæves også server-side, ikke kun via den deaktiverede knap i UI'et —
+ * en deaktiveret knap forhindrer ikke et direkte POST til denne action.
+ */
+function requireTermsAccepted(formData: FormData): { error: string } | null {
+  if (formData.get("termsAccepted") !== "on") {
+    return {
+      error: "Du skal acceptere handelsbetingelserne og privatlivspolitikken for at gennemføre bestillingen.",
+    };
+  }
+  return null;
+}
+
+/**
  * Læser kampagnekode-feltet fra formularen (samme skjulte-input-mønster som
  * leveringsadressen, se delivery-address-fields.tsx) og validerer den
  * server-side — aldrig via klientens egen session (campaign_codes har intet
@@ -271,6 +284,11 @@ export async function initiateCardCheckoutAction(
     return { error: "Ikke logget ind." };
   }
 
+  const termsError = requireTermsAccepted(formData);
+  if (termsError) {
+    return termsError;
+  }
+
   const cart = await getCart();
   if (cart.items.length === 0) {
     return { error: "Kurven er tom." };
@@ -374,6 +392,11 @@ export async function initiateInvoiceCheckoutAction(
 
   if (!user) {
     return { error: "Ikke logget ind." };
+  }
+
+  const termsError = requireTermsAccepted(formData);
+  if (termsError) {
+    return termsError;
   }
 
   const { data: profile } = await supabase

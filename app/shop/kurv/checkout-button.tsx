@@ -7,7 +7,7 @@ const initialState: CheckoutState = { error: null };
 
 export const CARD_CHECKOUT_FORM_ID = "card-checkout-form";
 
-export function CheckoutButton() {
+export function CheckoutButton({ termsAccepted }: { termsAccepted: boolean }) {
   const [state, formAction, isPending] = useActionState(
     initiateCardCheckoutAction,
     initialState,
@@ -19,10 +19,11 @@ export function CheckoutButton() {
       action={formAction}
       className="mt-4 w-full sm:w-auto"
     >
+      <input type="hidden" name="termsAccepted" value={termsAccepted ? "on" : ""} />
       {state.error && <p className="mb-2 text-sm text-red-600">{state.error}</p>}
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || !termsAccepted}
         className="w-full rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60 sm:w-auto"
       >
         {isPending ? "Starter betaling…" : "Gå til betaling med kort"}

@@ -7,7 +7,7 @@ const initialState: CheckoutState = { error: null };
 
 export const INVOICE_CHECKOUT_FORM_ID = "invoice-checkout-form";
 
-export function InvoiceCheckoutButton() {
+export function InvoiceCheckoutButton({ termsAccepted }: { termsAccepted: boolean }) {
   const [state, formAction, isPending] = useActionState(
     initiateInvoiceCheckoutAction,
     initialState,
@@ -19,10 +19,11 @@ export function InvoiceCheckoutButton() {
       action={formAction}
       className="mt-2 w-full sm:w-auto"
     >
+      <input type="hidden" name="termsAccepted" value={termsAccepted ? "on" : ""} />
       {state.error && <p className="mb-2 text-sm text-red-600">{state.error}</p>}
       <button
         type="submit"
-        disabled={isPending}
+        disabled={isPending || !termsAccepted}
         className="w-full rounded-md border border-slate-300 bg-white px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:opacity-60 sm:w-auto"
       >
         {isPending ? "Opretter ordre…" : "Bestil på faktura"}

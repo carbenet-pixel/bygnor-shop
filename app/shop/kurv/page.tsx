@@ -9,9 +9,10 @@ import { formatPrice, roundCurrency, displayName } from "@/lib/format";
 import { ProductImage } from "../product-image";
 import { SaveButton } from "@/components/save-button";
 import { updateCartItemAction, removeCartItemAction } from "./actions";
-import { CheckoutButton, CARD_CHECKOUT_FORM_ID } from "./checkout-button";
-import { InvoiceCheckoutButton, INVOICE_CHECKOUT_FORM_ID } from "./invoice-checkout-button";
+import { CARD_CHECKOUT_FORM_ID } from "./checkout-button";
+import { INVOICE_CHECKOUT_FORM_ID } from "./invoice-checkout-button";
 import { DeliveryAddressFields } from "./delivery-address-fields";
+import { CheckoutSection } from "./checkout-section";
 
 export const dynamic = "force-dynamic";
 
@@ -329,15 +330,9 @@ export default async function CartPage({
           />
         ))}
 
-        <CheckoutButton />
-        {invoiceApproved ? (
-          <InvoiceCheckoutButton />
-        ) : (
-          <p className="mt-2 text-xs text-slate-400">
-            Din konto er ikke godkendt til fakturabetaling — kontakt Bygnor
-            hvis I ønsker det.
-          </p>
-        )}
+        <div className="mt-4 w-full">
+          <CheckoutSection invoiceApproved={invoiceApproved} />
+        </div>
       </div>
     </div>
   );
