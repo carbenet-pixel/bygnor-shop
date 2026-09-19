@@ -26,6 +26,16 @@ export default async function ShopLayout({
   ]);
   const isAdmin = role === "admin" || role === "superadmin";
 
+  const companyName =
+    role === "kunde"
+      ? await supabase
+          .from("profiles")
+          .select("company_name")
+          .eq("id", user.id)
+          .maybeSingle()
+          .then(({ data }) => (data?.company_name as string | null) ?? null)
+      : null;
+
   return (
     <div className="min-h-screen bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
@@ -41,17 +51,28 @@ export default async function ShopLayout({
           </Link>
 
           <div className="flex items-center gap-4 text-xs text-slate-400">
-            <span>
-              Email: {user.email} · Rolle: {role ?? "ukendt"}
-            </span>
-            {isAdmin && (
-              <Link href="/admin" className="font-medium hover:text-[#185FA5]">
-                Admin →
-              </Link>
+            {role === "kunde" ? (
+              <span>
+                {companyName ?? "—"} ·{" "}
+                <Link href="/shop/konto" className="hover:text-[#185FA5]">
+                  Min konto
+                </Link>
+              </span>
+            ) : (
+              <>
+                <span>
+                  Email: {user.email} · Rolle: {role ?? "ukendt"}
+                </span>
+                {isAdmin && (
+                  <Link href="/admin" className="font-medium hover:text-[#185FA5]">
+                    Admin →
+                  </Link>
+                )}
+                <Link href="/shop/konto" className="hover:text-[#185FA5]">
+                  Min konto
+                </Link>
+              </>
             )}
-            <Link href="/shop/konto" className="hover:text-[#185FA5]">
-              Min konto
-            </Link>
             <Link
               href="/shop/kurv"
               className="relative flex items-center text-slate-500 hover:text-[#185FA5]"
