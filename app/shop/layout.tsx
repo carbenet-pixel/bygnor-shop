@@ -52,8 +52,11 @@ export default async function ShopLayout({
 
           <div className="flex items-center gap-4 text-xs text-slate-400">
             {role === "kunde" ? (
-              <span>
-                {companyName ?? "—"} ·{" "}
+              <span className="mr-2">
+                <span className="font-semibold text-slate-900">
+                  {companyName ?? "—"}
+                </span>{" "}
+                ·{" "}
                 <Link href="/shop/konto" className="hover:text-[#185FA5]">
                   Min konto
                 </Link>
