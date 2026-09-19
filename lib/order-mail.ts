@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMail, type MailMessage } from "@/lib/mail";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatAddressLines } from "@/lib/format";
 
 /**
  * Modtager for fakturaordrer — konfigureres via miljøvariabel, så den kan
@@ -154,15 +154,15 @@ function formatTotals(data: OrderMailData): string {
 }
 
 function formatDeliveryAddress(data: OrderMailData): string {
-  return [
-    data.deliveryRecipientName,
-    data.deliveryAddressLine1,
-    data.deliveryAddressLine2,
-    `${data.deliveryPostalCode} ${data.deliveryCity}`,
-    data.deliveryCountry,
-  ]
-    .filter(Boolean)
-    .join("\n");
+  return formatAddressLines({
+    companyName: data.companyName,
+    attentionName: data.deliveryRecipientName,
+    streetAddress: data.deliveryAddressLine1,
+    addressLine2: data.deliveryAddressLine2,
+    postalCode: data.deliveryPostalCode,
+    city: data.deliveryCity,
+    country: data.deliveryCountry,
+  }).join("\n");
 }
 
 /**

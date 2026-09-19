@@ -99,6 +99,7 @@ export type CustomerOrderDetail = {
   id: string;
   orderReference: string | null;
   createdAt: string;
+  companyName: string | null;
   deliveryRecipientName: string;
   deliveryAddressLine1: string;
   deliveryAddressLine2: string | null;
@@ -125,15 +126,18 @@ export async function getOrderForCustomer(
   } = await supabase.auth.getUser();
   if (!user) return null;
 
-  const { data: order, error } = await supabase
-    .from("orders")
-    .select(
-      "id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, unit_price_snapshot)",
-    )
-    .eq("id", id)
-    .eq("customer_id", user.id)
-    .or(VALID_CUSTOMER_ORDER_FILTER)
-    .maybeSingle();
+  const [{ data: order, error }, { data: profile }] = await Promise.all([
+    supabase
+      .from("orders")
+      .select(
+        "id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, unit_price_snapshot)",
+      )
+      .eq("id", id)
+      .eq("customer_id", user.id)
+      .or(VALID_CUSTOMER_ORDER_FILTER)
+      .maybeSingle(),
+    supabase.from("profiles").select("company_name").eq("id", user.id).maybeSingle(),
+  ]);
 
   if (error || !order) {
     return null;
@@ -158,6 +162,7 @@ export async function getOrderForCustomer(
     id: order.id as string,
     orderReference: order.order_reference as string | null,
     createdAt: order.created_at as string,
+    companyName: (profile?.company_name as string | null) ?? null,
     deliveryRecipientName: order.delivery_recipient_name as string,
     deliveryAddressLine1: order.delivery_address_line1 as string,
     deliveryAddressLine2: order.delivery_address_line2 as string | null,

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrderForCustomer, PAYMENT_METHOD_LABELS } from "@/lib/orders";
-import { formatPrice, formatDate } from "@/lib/format";
+import { formatPrice, formatDate, formatAddressLines } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -41,15 +41,22 @@ export default async function CustomerOrderDetailPage({
           <h2 className="mb-3 text-sm font-semibold text-slate-900">
             Leveringsadresse
           </h2>
-          <p className="text-sm text-slate-900">{order.deliveryRecipientName}</p>
-          <p className="text-sm text-slate-500">{order.deliveryAddressLine1}</p>
-          {order.deliveryAddressLine2 && (
-            <p className="text-sm text-slate-500">{order.deliveryAddressLine2}</p>
-          )}
-          <p className="text-sm text-slate-500">
-            {order.deliveryPostalCode} {order.deliveryCity}
-          </p>
-          <p className="text-sm text-slate-500">{order.deliveryCountry}</p>
+          {formatAddressLines({
+            companyName: order.companyName,
+            attentionName: order.deliveryRecipientName,
+            streetAddress: order.deliveryAddressLine1,
+            addressLine2: order.deliveryAddressLine2,
+            postalCode: order.deliveryPostalCode,
+            city: order.deliveryCity,
+            country: order.deliveryCountry,
+          }).map((line, index) => (
+            <p
+              key={index}
+              className={index === 0 ? "text-sm text-slate-900" : "text-sm text-slate-500"}
+            >
+              {line}
+            </p>
+          ))}
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">

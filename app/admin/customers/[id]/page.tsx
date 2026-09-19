@@ -225,7 +225,7 @@ export default async function CustomerDetailPage({
                 <th className={cellClass}>Postnr</th>
                 <th className={cellClass}>By</th>
                 <th className={cellClass}>Land</th>
-                <th className={cellClass}>Kontakt</th>
+                <th className={cellClass}>Att</th>
                 <th className={cellClass}>Telefon</th>
                 <th className={cellClass}></th>
               </tr>
@@ -386,7 +386,7 @@ export default async function CustomerDetailPage({
 
           <div>
             <label htmlFor="new-contactName" className={labelClass}>
-              Kontaktperson
+              Att (modtagernavn)
             </label>
             <input
               id="new-contactName"

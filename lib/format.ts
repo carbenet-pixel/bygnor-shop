@@ -50,6 +50,39 @@ export function formatDate(iso: string): string {
   }).format(new Date(iso));
 }
 
+export type PostalAddressInfo = {
+  companyName: string | null;
+  attentionName: string | null;
+  streetAddress: string;
+  addressLine2?: string | null;
+  postalCode: string | null;
+  city: string | null;
+  country: string;
+};
+
+/**
+ * Fælles, fragt-klar formatering af en leveringsadresse — samme
+ * linjerækkefølge i kurven, ordrebekræftelsen (kunde og admin) og
+ * fakturamailen til salg. "attentionName" er delivery_addresses.contact_name
+ * (eller den midlertidige engangsadresses "Modtagernavn") — det er ikke
+ * kundens firmanavn, som altid hentes separat fra profiles.company_name.
+ * Att-linjen og adresselinje 2 udelades helt når de er tomme, i stedet for
+ * en synligt tom linje.
+ */
+export function formatAddressLines(address: PostalAddressInfo): string[] {
+  const lines: string[] = [address.companyName ?? "—"];
+  if (address.attentionName) {
+    lines.push(`Att: ${address.attentionName}`);
+  }
+  lines.push(address.streetAddress);
+  if (address.addressLine2) {
+    lines.push(address.addressLine2);
+  }
+  lines.push(`${address.postalCode ?? ""} ${address.city ?? ""}`.trim());
+  lines.push(address.country);
+  return lines;
+}
+
 const COMBINING_DIACRITICS = new RegExp("[̀-ͯ]", "g");
 
 export function slugify(input: string): string {

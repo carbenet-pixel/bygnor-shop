@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { formatAddressLines } from "@/lib/format";
 
 const inputClass =
   "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
@@ -21,9 +22,11 @@ export type DefaultAddress = {
  * redigerbare felter holdes i React-state her og spejles ind i begge.
  */
 export function DeliveryAddressFields({
+  companyName,
   defaultAddress,
   targetFormIds,
 }: {
+  companyName: string | null;
   defaultAddress: DefaultAddress;
   targetFormIds: string[];
 }) {
@@ -43,13 +46,17 @@ export function DeliveryAddressFields({
 
       {defaultAddress ? (
         <div className="mb-3 text-sm text-slate-600">
-          <p>{defaultAddress.contactName ?? "—"}</p>
-          <p>{defaultAddress.streetAddress}</p>
-          {defaultAddress.label && <p>{defaultAddress.label}</p>}
-          <p>
-            {defaultAddress.postalCode} {defaultAddress.city}
-          </p>
-          <p>{defaultAddress.country}</p>
+          {formatAddressLines({
+            companyName,
+            attentionName: defaultAddress.contactName,
+            streetAddress: defaultAddress.streetAddress,
+            addressLine2: defaultAddress.label,
+            postalCode: defaultAddress.postalCode,
+            city: defaultAddress.city,
+            country: defaultAddress.country,
+          }).map((line, index) => (
+            <p key={index}>{line}</p>
+          ))}
         </div>
       ) : (
         <p className="mb-3 text-sm text-amber-600">
@@ -72,7 +79,7 @@ export function DeliveryAddressFields({
         <div className="grid grid-cols-2 gap-3">
           <input
             className={`${inputClass} col-span-2`}
-            placeholder="Modtagernavn"
+            placeholder="Modtagernavn (Att)"
             value={recipientName}
             onChange={(e) => setRecipientName(e.target.value)}
           />

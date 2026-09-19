@@ -30,11 +30,19 @@ export default async function CartPage({
     data: { user },
   } = await supabase.auth.getUser();
 
-  const [cart, invoiceApproved, discount, addresses] = await Promise.all([
+  const [cart, invoiceApproved, discount, addresses, companyName] = await Promise.all([
     getCart(),
     isInvoiceApproved(),
     getCustomerDiscount(),
     user ? listAddresses(user.id) : Promise.resolve([]),
+    user
+      ? supabase
+          .from("profiles")
+          .select("company_name")
+          .eq("id", user.id)
+          .maybeSingle()
+          .then(({ data }) => (data?.company_name as string | null) ?? null)
+      : Promise.resolve(null),
   ]);
 
   // Valideres server-side ved hvert besøg — aldrig via klientens egen
@@ -305,6 +313,7 @@ export default async function CartPage({
 
         <div className="mt-4 w-full">
           <DeliveryAddressFields
+            companyName={companyName}
             defaultAddress={defaultAddress}
             targetFormIds={[CARD_CHECKOUT_FORM_ID, INVOICE_CHECKOUT_FORM_ID]}
           />
