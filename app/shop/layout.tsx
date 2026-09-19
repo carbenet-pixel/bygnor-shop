@@ -5,6 +5,7 @@ import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/supabase/get-user-role";
 import { getCartItemCount } from "@/lib/cart";
 import { logout } from "@/lib/supabase/actions";
+import { Footer } from "@/components/footer";
 
 export default async function ShopLayout({
   children,
@@ -37,7 +38,7 @@ export default async function ShopLayout({
       : null;
 
   return (
-    <div className="min-h-screen bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-slate-50">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <Link href="/shop">
@@ -110,7 +111,9 @@ export default async function ShopLayout({
         </div>
       </header>
 
-      {children}
+      <div className="flex-1">{children}</div>
+
+      <Footer />
     </div>
   );
 }
