@@ -69,14 +69,22 @@ export async function createPaymentAndLink(
     body: JSON.stringify({ order_id: orderReference, currency: "DKK" }),
   });
 
+  // Link API (v10) bruger understregs-feltnavne — IKKE de samme navne som
+  // Payment Form API'et (continueurl/cancelurl/callbackurl/autocapture).
+  // Bekræftet mod Quickpays eget callback-eksempel (learn.quickpay.net/
+  // tech-talk/api/callback/, som ekkoer link-objektet med continue_url/
+  // cancel_url/callback_url/auto_capture) og mod en vedligeholdt v10-klient
+  // (omnipay-quickpay's LinkRequest). De forkerte navne blev tidligere
+  // stille ignoreret af Quickpay — ingen redirect, intet callback, og
+  // kortet blev aldrig auto-trukket.
   const link = await quickpayRequest<QuickpayLink>(`/payments/${payment.id}/link`, {
     method: "PUT",
     body: JSON.stringify({
       amount: amountInOre,
-      continueurl: `${SITE_URL}/shop/checkout/kvittering?order=${orderReference}`,
-      cancelurl: `${SITE_URL}/shop/checkout/annulleret?order=${orderReference}`,
-      callbackurl: `${SITE_URL}/api/quickpay/callback`,
-      autocapture: true,
+      continue_url: `${SITE_URL}/shop/checkout/kvittering?order=${orderReference}`,
+      cancel_url: `${SITE_URL}/shop/checkout/annulleret?order=${orderReference}`,
+      callback_url: `${SITE_URL}/api/quickpay/callback`,
+      auto_capture: true,
     }),
   });
 

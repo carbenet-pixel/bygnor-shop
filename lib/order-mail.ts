@@ -303,3 +303,45 @@ ${formatTotals(data, false)}
     `ordrebekræftelse ordre=${orderId}`,
   );
 }
+
+/**
+ * Quickpay-callbacket rapporterede en fuldført capture, men et af de
+ * finansielle felter (beløb/valuta/test-mode) matchede ikke det vi
+ * forventede for ordren — se app/api/quickpay/callback/route.ts. Ordren
+ * markeres bevidst hverken betalt eller fejlet i det tilfælde (se
+ * migration 0034's kommentar), så uden denne mail ville en reel uoverens-
+ * stemmelse kunne ligge uopdaget i quickpay_callback_events. Holdes kort
+ * med vilje — detaljerne står i selve rækken, mailen er kun en vækker.
+ */
+export async function sendQuickpayMismatchAlert(
+  orderReference: string | null,
+  orderId: string,
+  reason: string,
+): Promise<void> {
+  let salesEmail: string;
+  try {
+    salesEmail = getSalesNotificationEmail();
+  } catch (err) {
+    console.error(
+      `[order-mail] Quickpay-mismatch-alarm ordre=${orderId}: kan ikke sendes`,
+      err,
+    );
+    return;
+  }
+
+  const subject = `Quickpay-callback matcher ikke ordren — ${orderReference ?? orderId}`;
+
+  const body = `Et Quickpay-callback rapporterede en gennemført betaling, men matchede ikke det forventede for ordren. Ordrens status er IKKE ændret — den kræver manuelt gennemsyn.
+
+Ordrereference: ${orderReference ?? "ukendt"}
+Hvad matchede ikke: ${reason}
+
+Se hele det modtagne callback (og ordren) her:
+https://bygnor-shop.vercel.app/admin/orders/${orderId}
+`;
+
+  await sendMailWithRetry(
+    { to: [salesEmail], subject, body },
+    `Quickpay-mismatch-alarm ordre=${orderId}`,
+  );
+}
