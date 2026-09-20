@@ -3,5 +3,12 @@
 -- (kontaktperson-telefon pr. leveringsadresse, migration 0002). Kunden må
 -- selv redigere dette felt (se app/shop/konto/indstillinger), i modsætning
 -- til firma/CVR/rabat/betalingsmetode som forbliver admin-only.
-
-alter table public.profiles add column phone text;
+--
+-- NO-OP i praksis: profiles.phone (samme navn/type, text, nullable, ingen
+-- default) blev allerede tilføjet af 0003_application_details.sql — en
+-- overset duplikering opdaget senere. En frisk migrationskørsel fra bunden
+-- ville ellers fejle her på en duplikeret kolonne. "if not exists" gør
+-- denne migration sikker at beholde og køre i ALLE miljøer, uanset om den
+-- allerede er anvendt et sted tidligere eller ej — filen slettes bevidst
+-- ikke, kun neutraliseres.
+alter table public.profiles add column if not exists phone text;
