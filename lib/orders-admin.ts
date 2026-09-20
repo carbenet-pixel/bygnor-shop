@@ -120,6 +120,10 @@ export type OrderAdminDetail = {
   discountLabel: string | null;
   quickpayPaymentId: string | null;
   externalCustomerNumber: string | null;
+  vatRate: number | null;
+  vatType: string | null;
+  vatDestination: string | null;
+  vatNote: string | null;
   items: OrderAdminItem[];
 };
 
@@ -129,7 +133,7 @@ export async function getOrderAdmin(id: string): Promise<OrderAdminDetail | null
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "id, customer_id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, discount_percent, discount_label, quickpay_payment_id, external_customer_number_snapshot, order_items(name_snapshot, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
+      "id, customer_id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, discount_percent, discount_label, quickpay_payment_id, external_customer_number_snapshot, vat_rate, vat_type, vat_destination, vat_note, order_items(name_snapshot, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
     )
     .eq("id", id)
     .single();
@@ -184,6 +188,10 @@ export async function getOrderAdmin(id: string): Promise<OrderAdminDetail | null
     discountLabel: order.discount_label as string | null,
     quickpayPaymentId: order.quickpay_payment_id as string | null,
     externalCustomerNumber: order.external_customer_number_snapshot as string | null,
+    vatRate: order.vat_rate as number | null,
+    vatType: order.vat_type as string | null,
+    vatDestination: order.vat_destination as string | null,
+    vatNote: order.vat_note as string | null,
     items,
   };
 }

@@ -84,6 +84,14 @@ export default async function CustomerOrderDetailPage({
                 {formatPrice(order.totalAmount)}
               </p>
             </div>
+            {order.vatRate != null && (
+              <div>
+                <span className={labelClass}>Moms</span>
+                <p className="text-sm text-slate-900">
+                  {order.vatRate}%{order.vatType ? ` (${order.vatType})` : ""}
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>

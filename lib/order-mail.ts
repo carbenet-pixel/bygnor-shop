@@ -41,6 +41,9 @@ type OrderMailData = {
   paymentMethod: string;
   totalAmount: number | null;
   discountLabel: string | null;
+  vatRate: number | null;
+  vatType: string | null;
+  vatNote: string | null;
   items: OrderMailItem[];
 };
 
@@ -50,7 +53,7 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "order_reference, customer_id, external_customer_number_snapshot, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, discount_label, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
+      "order_reference, customer_id, external_customer_number_snapshot, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, discount_label, vat_rate, vat_type, vat_note, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
     )
     .eq("id", orderId)
     .single();
@@ -102,6 +105,9 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
     paymentMethod: order.payment_method as string,
     totalAmount: order.total_amount as number | null,
     discountLabel: order.discount_label as string | null,
+    vatRate: order.vat_rate as number | null,
+    vatType: order.vat_type as string | null,
+    vatNote: order.vat_note as string | null,
     items,
   };
 }
@@ -133,7 +139,14 @@ function formatItemsList(items: OrderMailItem[], language: "sv" | "da"): string 
     .join("\n");
 }
 
-function formatTotals(data: OrderMailData): string {
+/**
+ * includeVatNote: kun sand for den interne salgsnotifikation.
+ * vat_note (den lovpligtige fakturatekst) må ALDRIG nå kundens egen
+ * ordrebekræftelse eller kvitteringsside — den faktiske faktura kommer fra
+ * det eksterne regnskabssystem, ikke herfra. vat_rate/vat_type (de
+ * tekniske felter) vises stadig begge steder.
+ */
+function formatTotals(data: OrderMailData, includeVatNote: boolean): string {
   const pricedItems = data.items.filter((item) => item.basePrice != null);
   if (pricedItems.length === 0) {
     return `Samlet beløb: ${formatPrice(data.totalAmount)}`;
@@ -150,6 +163,17 @@ function formatTotals(data: OrderMailData): string {
     lines.push(`Rabat (${data.discountLabel ?? "ukendt"}): -${formatPrice(discountTotal)}`);
   }
   lines.push(`Samlet beløb (endelig pris): ${formatPrice(data.totalAmount)}`);
+
+  // Intet momsafsnit hvis ordren mangler et snapshot (ukendt leveringsland
+  // eller ingen aktiv regel på ordretidspunktet) — ikke en gættet sats.
+  if (data.vatRate != null) {
+    const typeText = data.vatType ? ` (${data.vatType})` : "";
+    lines.push(`Moms: ${data.vatRate}%${typeText}`);
+    if (includeVatNote && data.vatNote) {
+      lines.push(data.vatNote);
+    }
+  }
+
   return lines.join("\n");
 }
 
@@ -223,7 +247,7 @@ ${formatItemsList(data.items, "sv")}
 Leveringsadresse:
 ${formatDeliveryAddress(data)}
 
-${formatTotals(data)}
+${formatTotals(data, true)}
 `;
 
   await sendMailWithRetry({ to: [salesEmail], subject, body }, `fakturanotifikation ordre=${orderId}`);
@@ -261,7 +285,7 @@ Leveringsadresse:
 ${formatDeliveryAddress(data)}
 
 Betalingsstatus: ${paymentStatusText}
-${formatTotals(data)}
+${formatTotals(data, false)}
 `;
 
   await sendMailWithRetry(

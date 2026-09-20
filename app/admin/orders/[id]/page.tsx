@@ -185,6 +185,26 @@ export default async function OrderDetailPage({
                 {formatPrice(order.totalAmount)}
               </p>
             </div>
+
+            <div>
+              <span className={labelClass}>Moms</span>
+              {order.vatRate != null ? (
+                <>
+                  <p className="text-sm text-slate-900">
+                    {order.vatRate}% ({order.vatDestination}
+                    {order.vatType ? `, ${order.vatType}` : ""})
+                  </p>
+                  {order.vatNote && (
+                    <p className="mt-1 text-xs text-slate-400">{order.vatNote}</p>
+                  )}
+                </>
+              ) : (
+                <p className="text-sm text-slate-500">
+                  Intet momssnapshot — ukendt leveringsland eller ingen aktiv
+                  momsregel på ordretidspunktet.
+                </p>
+              )}
+            </div>
           </div>
         </div>
 

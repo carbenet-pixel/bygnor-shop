@@ -16,6 +16,7 @@ import {
 import { createPaymentAndLink } from "@/lib/quickpay";
 import { sendInvoiceOrderNotification, sendOrderConfirmation } from "@/lib/order-mail";
 import { roundCurrency } from "@/lib/format";
+import { resolveVatSnapshot } from "@/lib/vat-rules";
 
 export type CheckoutState = { error: string | null };
 
@@ -147,6 +148,13 @@ async function createOrderWithReference(
   const externalCustomerNumberSnapshot =
     (profile?.external_customer_number as string | null) ?? null;
 
+  // Fastfryses ved oprettelse, samme princip som resten af snapshottene
+  // ovenfor — en senere rettelse i vat_rules (fx når revisoren har
+  // bekræftet de rigtige satser/tekster) må ikke ændre allerede oprettede
+  // ordrer. Intet match (ukendt land/ingen aktiv regel) giver bevidst
+  // null-felter frem for en gættet sats.
+  const vatSnapshot = await resolveVatSnapshot(input.deliveryAddress.country);
+
   for (let attempt = 0; attempt < 5; attempt++) {
     const { data: order, error } = await supabase
       .from("orders")
@@ -166,6 +174,10 @@ async function createOrderWithReference(
         discount_label: input.discountLabel,
         external_customer_number_snapshot: externalCustomerNumberSnapshot,
         campaign_code_snapshot: input.campaignCodeSnapshot,
+        vat_rate: vatSnapshot?.vatRate ?? null,
+        vat_type: vatSnapshot?.vatType ?? null,
+        vat_destination: vatSnapshot?.vatDestination ?? null,
+        vat_note: vatSnapshot?.vatNote ?? null,
       })
       .select("id")
       .single();
