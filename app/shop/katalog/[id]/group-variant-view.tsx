@@ -120,14 +120,21 @@ export function GroupVariantView({
             </div>
           ) : (
             <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-              <span
-                className={
-                  selected.basePrice == null
-                    ? "text-sm text-slate-400 italic"
-                    : "text-lg font-semibold text-slate-900"
-                }
-              >
-                {formatPrice(selected.basePrice)}
+              <span>
+                <span
+                  className={
+                    selected.basePrice == null
+                      ? "text-sm text-slate-400 italic"
+                      : "text-lg font-semibold text-slate-900"
+                  }
+                >
+                  {formatPrice(selected.basePrice)}
+                </span>
+                {selected.basePrice != null && (
+                  <span className="block text-xs font-normal text-slate-400">
+                    ekskl. moms
+                  </span>
+                )}
               </span>
               <AddToCartForm key={selected.id} productId={selected.id} />
             </div>

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
-import { formatPrice } from "@/lib/format";
+import { formatPrice, formatVatBreakdownLines } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -21,7 +21,7 @@ export default async function ReceiptPage({
   // ingen ekstra ejerskabs-tjek nødvendig i selve koden.
   const { data: order } = await supabase
     .from("orders")
-    .select("status, total_amount, vat_rate, vat_type")
+    .select("status, total_amount, subtotal_amount, vat_amount, vat_rate")
     .eq("order_reference", orderReference)
     .maybeSingle();
 
@@ -31,7 +31,15 @@ export default async function ReceiptPage({
 
   const showVatInfo =
     (order.status === "afventer" || order.status === "betalt") &&
-    order.vat_rate != null;
+    order.subtotal_amount != null;
+  const vatBreakdownLines = showVatInfo
+    ? formatVatBreakdownLines({
+        subtotalAmount: order.subtotal_amount,
+        vatAmount: order.vat_amount,
+        totalAmount: order.total_amount,
+        vatRate: order.vat_rate,
+      })
+    : [];
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 text-center">
@@ -97,10 +105,11 @@ export default async function ReceiptPage({
 
       {showVatInfo && (
         <div className="mb-6 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
-          <p>
-            Moms: {order.vat_rate}%
-            {order.vat_type ? ` (${order.vat_type})` : ""}
-          </p>
+          {vatBreakdownLines.map((line) => (
+            <p key={line.label} className={line.emphasis ? "font-semibold text-slate-900" : ""}>
+              {line.label}: {line.value}
+            </p>
+          ))}
         </div>
       )}
 

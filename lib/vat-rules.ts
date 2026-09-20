@@ -1,5 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { roundCurrency } from "@/lib/format";
 
 export type VatRule = {
   destinationCountry: string;
@@ -143,5 +144,38 @@ export async function resolveVatSnapshot(
     vatType: data.vat_type as string,
     vatDestination: code,
     vatNote: data.invoice_note as string,
+  };
+}
+
+export type VatAmounts = {
+  subtotalAmount: number | null;
+  vatAmount: number | null;
+  totalAmount: number | null;
+};
+
+/**
+ * subtotal er den rabatterede, ex-moms varesum (samme tal
+ * computeDiscountedTotal() i checkout-actions.ts altid har beregnet).
+ * totalAmount er det FAKTISK opkrævede/betalte beløb (inkl. moms) — det er
+ * dette tal der skal bruges til Quickpay og som ordrens total, ikke
+ * subtotalAmount. Intet vatSnapshot (ukendt leveringsland/ingen aktiv
+ * regel) giver bevidst vatAmount=null og totalAmount=subtotal — falder
+ * tilbage til den hidtidige (ex-moms) opførsel frem for at gætte en sats.
+ */
+export function computeVatBreakdown(
+  subtotal: number | null,
+  vatSnapshot: VatSnapshot | null,
+): VatAmounts {
+  if (subtotal == null) {
+    return { subtotalAmount: null, vatAmount: null, totalAmount: null };
+  }
+  if (!vatSnapshot) {
+    return { subtotalAmount: subtotal, vatAmount: null, totalAmount: subtotal };
+  }
+  const vatAmount = roundCurrency((subtotal * vatSnapshot.vatRate) / 100);
+  return {
+    subtotalAmount: subtotal,
+    vatAmount,
+    totalAmount: roundCurrency(subtotal + vatAmount),
   };
 }

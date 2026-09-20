@@ -16,7 +16,7 @@ import {
 import { createPaymentAndLink } from "@/lib/quickpay";
 import { sendInvoiceOrderNotification, sendOrderConfirmation } from "@/lib/order-mail";
 import { roundCurrency } from "@/lib/format";
-import { resolveVatSnapshot } from "@/lib/vat-rules";
+import { resolveVatSnapshot, computeVatBreakdown, type VatSnapshot } from "@/lib/vat-rules";
 
 export type CheckoutState = { error: string | null };
 
@@ -129,7 +129,10 @@ async function createOrderWithReference(
     deliveryAddress: ResolvedDeliveryAddress;
     paymentMethod: "kort" | "faktura";
     status: string;
+    subtotalAmount: number | null;
+    vatAmount: number | null;
     totalAmount: number | null;
+    vatSnapshot: VatSnapshot | null;
     discountPercent: number;
     discountLabel: string;
     campaignCodeSnapshot: string | null;
@@ -148,13 +151,6 @@ async function createOrderWithReference(
   const externalCustomerNumberSnapshot =
     (profile?.external_customer_number as string | null) ?? null;
 
-  // Fastfryses ved oprettelse, samme princip som resten af snapshottene
-  // ovenfor — en senere rettelse i vat_rules (fx når revisoren har
-  // bekræftet de rigtige satser/tekster) må ikke ændre allerede oprettede
-  // ordrer. Intet match (ukendt land/ingen aktiv regel) giver bevidst
-  // null-felter frem for en gættet sats.
-  const vatSnapshot = await resolveVatSnapshot(input.deliveryAddress.country);
-
   for (let attempt = 0; attempt < 5; attempt++) {
     const { data: order, error } = await supabase
       .from("orders")
@@ -168,16 +164,18 @@ async function createOrderWithReference(
         delivery_country: input.deliveryAddress.country,
         payment_method: input.paymentMethod,
         status: input.status,
+        subtotal_amount: input.subtotalAmount,
+        vat_amount: input.vatAmount,
         total_amount: input.totalAmount,
         order_reference: orderReference,
         discount_percent: input.discountPercent,
         discount_label: input.discountLabel,
         external_customer_number_snapshot: externalCustomerNumberSnapshot,
         campaign_code_snapshot: input.campaignCodeSnapshot,
-        vat_rate: vatSnapshot?.vatRate ?? null,
-        vat_type: vatSnapshot?.vatType ?? null,
-        vat_destination: vatSnapshot?.vatDestination ?? null,
-        vat_note: vatSnapshot?.vatNote ?? null,
+        vat_rate: input.vatSnapshot?.vatRate ?? null,
+        vat_type: input.vatSnapshot?.vatType ?? null,
+        vat_destination: input.vatSnapshot?.vatDestination ?? null,
+        vat_note: input.vatSnapshot?.vatNote ?? null,
       })
       .select("id")
       .single();
@@ -329,7 +327,18 @@ export async function initiateCardCheckoutAction(
   const { campaignCode } = campaignResolved;
 
   const discount = await getCustomerDiscount();
-  const totalAmount = computeDiscountedTotal(cart.items, discount.percent, campaignCode);
+  const subtotal = computeDiscountedTotal(cart.items, discount.percent, campaignCode);
+  if (subtotal == null) {
+    return { error: "Kunne ikke beregne et beløb for kurven." };
+  }
+
+  // Fastfryses FØR ordren oprettes, samme princip som resten af
+  // snapshottene — en senere rettelse i vat_rules må ikke ændre en
+  // allerede oprettet ordre. Intet match (ukendt land/ingen aktiv regel)
+  // giver bevidst vatAmount=null og totalAmount=subtotal, ikke en gættet
+  // sats — se computeVatBreakdown().
+  const vatSnapshot = await resolveVatSnapshot(resolved.country);
+  const { subtotalAmount, vatAmount, totalAmount } = computeVatBreakdown(subtotal, vatSnapshot);
   if (totalAmount == null) {
     return { error: "Kunne ikke beregne et beløb for kurven." };
   }
@@ -339,7 +348,10 @@ export async function initiateCardCheckoutAction(
     deliveryAddress: resolved,
     paymentMethod: "kort",
     status: "afventer_betaling",
+    subtotalAmount,
+    vatAmount,
     totalAmount,
+    vatSnapshot,
     discountPercent: discount.percent,
     discountLabel: discount.label,
     campaignCodeSnapshot: campaignCode?.code ?? null,
@@ -362,6 +374,8 @@ export async function initiateCardCheckoutAction(
 
   let linkUrl: string;
   try {
+    // Beløbet sendt til Quickpay er nu det inkl. moms (totalAmount), ikke
+    // det gamle ex-moms-tal — det er dette der reelt skal opkræves.
     const amountInOre = Math.round(totalAmount * 100);
     const result = await createPaymentAndLink(orderReference, amountInOre);
     linkUrl = result.linkUrl;
@@ -439,14 +453,23 @@ export async function initiateInvoiceCheckoutAction(
   const { campaignCode } = campaignResolved;
 
   const discount = await getCustomerDiscount();
-  const totalAmount = computeDiscountedTotal(cart.items, discount.percent, campaignCode);
+  const subtotal = computeDiscountedTotal(cart.items, discount.percent, campaignCode);
+
+  // Fastfryses FØR ordren oprettes — se samme kommentar i
+  // initiateCardCheckoutAction. Faktura-sporet tillader fortsat et null
+  // subtotal (nogle/alle linjer uden pris endnu, sælger følger op manuelt).
+  const vatSnapshot = await resolveVatSnapshot(resolved.country);
+  const { subtotalAmount, vatAmount, totalAmount } = computeVatBreakdown(subtotal, vatSnapshot);
 
   const created = await createOrderWithReference(supabase, {
     customerId: user.id,
     deliveryAddress: resolved,
     paymentMethod: "faktura",
     status: "afventer",
+    subtotalAmount,
+    vatAmount,
     totalAmount,
+    vatSnapshot,
     discountPercent: discount.percent,
     discountLabel: discount.label,
     campaignCodeSnapshot: campaignCode?.code ?? null,

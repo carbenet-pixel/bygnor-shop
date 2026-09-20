@@ -1,7 +1,7 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMail, type MailMessage } from "@/lib/mail";
-import { formatPrice, formatAddressLines } from "@/lib/format";
+import { formatPrice, formatAddressLines, formatVatBreakdownLines } from "@/lib/format";
 
 /**
  * Modtager for fakturaordrer — konfigureres via miljøvariabel, så den kan
@@ -40,6 +40,8 @@ type OrderMailData = {
   deliveryCountry: string;
   paymentMethod: string;
   totalAmount: number | null;
+  subtotalAmount: number | null;
+  vatAmount: number | null;
   discountLabel: string | null;
   vatRate: number | null;
   vatType: string | null;
@@ -53,7 +55,7 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
   const { data: order, error } = await supabaseAdmin
     .from("orders")
     .select(
-      "order_reference, customer_id, external_customer_number_snapshot, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, discount_label, vat_rate, vat_type, vat_note, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
+      "order_reference, customer_id, external_customer_number_snapshot, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, total_amount, subtotal_amount, vat_amount, discount_label, vat_rate, vat_type, vat_note, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, base_price_snapshot, unit_price_snapshot)",
     )
     .eq("id", orderId)
     .single();
@@ -104,6 +106,8 @@ async function loadOrderMailData(orderId: string): Promise<OrderMailData | null>
     deliveryCountry: order.delivery_country as string,
     paymentMethod: order.payment_method as string,
     totalAmount: order.total_amount as number | null,
+    subtotalAmount: order.subtotal_amount as number | null,
+    vatAmount: order.vat_amount as number | null,
     discountLabel: order.discount_label as string | null,
     vatRate: order.vat_rate as number | null,
     vatType: order.vat_type as string | null,
@@ -149,29 +153,35 @@ function formatItemsList(items: OrderMailItem[], language: "sv" | "da"): string 
 function formatTotals(data: OrderMailData, includeVatNote: boolean): string {
   const pricedItems = data.items.filter((item) => item.basePrice != null);
   if (pricedItems.length === 0) {
-    return `Samlet beløb: ${formatPrice(data.totalAmount)}`;
+    return `Total: ${formatPrice(data.totalAmount)}`;
   }
 
   const normalTotal = pricedItems.reduce(
     (sum, item) => sum + item.basePrice! * item.quantity,
     0,
   );
-  const discountTotal = normalTotal - (data.totalAmount ?? normalTotal);
+  // Rabatten er ex-moms — sammenlignes med subtotalAmount (ex-moms,
+  // rabatteret), ikke totalAmount (som nu er inkl. moms).
+  const discountTotal = normalTotal - (data.subtotalAmount ?? normalTotal);
 
   const lines = [`Normalpris i alt: ${formatPrice(normalTotal)}`];
   if (discountTotal > 0) {
     lines.push(`Rabat (${data.discountLabel ?? "ukendt"}): -${formatPrice(discountTotal)}`);
   }
-  lines.push(`Samlet beløb (endelig pris): ${formatPrice(data.totalAmount)}`);
 
-  // Intet momsafsnit hvis ordren mangler et snapshot (ukendt leveringsland
-  // eller ingen aktiv regel på ordretidspunktet) — ikke en gættet sats.
-  if (data.vatRate != null) {
-    const typeText = data.vatType ? ` (${data.vatType})` : "";
-    lines.push(`Moms: ${data.vatRate}%${typeText}`);
-    if (includeVatNote && data.vatNote) {
-      lines.push(data.vatNote);
-    }
+  for (const line of formatVatBreakdownLines({
+    subtotalAmount: data.subtotalAmount,
+    vatAmount: data.vatAmount,
+    totalAmount: data.totalAmount,
+    vatRate: data.vatRate,
+  })) {
+    lines.push(`${line.label}: ${line.value}`);
+  }
+
+  // vat_note (den lovpligtige fakturatekst) må ALDRIG nå kundens egen
+  // ordrebekræftelse — kun den interne salgsnotifikation.
+  if (includeVatNote && data.vatRate != null && data.vatNote) {
+    lines.push(data.vatNote);
   }
 
   return lines.join("\n");

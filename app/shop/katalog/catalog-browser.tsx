@@ -60,11 +60,18 @@ function GroupCard({
             : "mt-1 text-sm font-semibold text-slate-900"
         }
       >
-        {minPrice != null
-          ? `Fra ${formatPrice(minPrice)}`
-          : onlyPriceOnRequest
-            ? "Kontakt os for tilbud"
-            : "Pris oplyses snarest"}
+        {minPrice != null ? (
+          <>
+            {`Fra ${formatPrice(minPrice)}`}
+            <span className="block text-xs font-normal text-slate-400">
+              ekskl. moms
+            </span>
+          </>
+        ) : onlyPriceOnRequest ? (
+          "Kontakt os for tilbud"
+        ) : (
+          "Pris oplyses snarest"
+        )}
       </p>
     </Link>
   );

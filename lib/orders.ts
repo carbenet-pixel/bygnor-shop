@@ -110,8 +110,9 @@ export type CustomerOrderDetail = {
   paymentStatusLabel: string;
   fulfillmentStatusLabel: string;
   totalAmount: number | null;
+  subtotalAmount: number | null;
+  vatAmount: number | null;
   vatRate: number | null;
-  vatType: string | null;
   items: CustomerOrderItem[];
 };
 
@@ -135,7 +136,7 @@ export async function getOrderForCustomer(
     supabase
       .from("orders")
       .select(
-        "id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, vat_rate, vat_type, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, unit_price_snapshot)",
+        "id, order_reference, created_at, delivery_recipient_name, delivery_address_line1, delivery_address_line2, delivery_postal_code, delivery_city, delivery_country, payment_method, status, fulfillment_status, total_amount, subtotal_amount, vat_amount, vat_rate, order_items(name_snapshot, name_snapshot_da, sku_snapshot, quantity, unit_price_snapshot)",
       )
       .eq("id", id)
       .eq("customer_id", user.id)
@@ -181,8 +182,9 @@ export async function getOrderForCustomer(
       FULFILLMENT_STATUS_LABELS[order.fulfillment_status as string] ??
       (order.fulfillment_status as string),
     totalAmount: order.total_amount as number | null,
+    subtotalAmount: order.subtotal_amount as number | null,
+    vatAmount: order.vat_amount as number | null,
     vatRate: order.vat_rate as number | null,
-    vatType: order.vat_type as string | null,
     items,
   };
 }

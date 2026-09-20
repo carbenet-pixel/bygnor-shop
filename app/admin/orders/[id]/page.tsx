@@ -7,7 +7,7 @@ import {
   FULFILLMENT_STATUS_LABELS,
   FULFILLMENT_STATUS_BADGE_CLASSES,
 } from "@/lib/orders-admin";
-import { formatPrice, formatDate, formatAddressLines } from "@/lib/format";
+import { formatPrice, formatDate, formatAddressLines, formatVatBreakdownLines } from "@/lib/format";
 import { SaveButton } from "@/components/save-button";
 import { updateOrderStatusAction, updateOrderFulfillmentStatusAction } from "../actions";
 
@@ -44,8 +44,10 @@ export default async function OrderDetailPage({
     (sum, item) => sum + item.basePrice! * item.quantity,
     0,
   );
+  // Rabatten er ex-moms — sammenlignes derfor med subtotalAmount (den
+  // ex-moms, rabatterede sum), ikke totalAmount (som nu er inkl. moms).
   const discountTotal =
-    pricedItems.length > 0 ? normalTotal - (order.totalAmount ?? normalTotal) : 0;
+    pricedItems.length > 0 ? normalTotal - (order.subtotalAmount ?? normalTotal) : 0;
 
   return (
     <div>
@@ -179,20 +181,33 @@ export default async function OrderDetailPage({
               </div>
             )}
 
-            <div>
-              <span className={labelClass}>Samlet beløb (endelig pris)</span>
-              <p className="text-sm font-semibold text-slate-900">
-                {formatPrice(order.totalAmount)}
-              </p>
-            </div>
+            {formatVatBreakdownLines({
+              subtotalAmount: order.subtotalAmount,
+              vatAmount: order.vatAmount,
+              totalAmount: order.totalAmount,
+              vatRate: order.vatRate,
+            }).map((line) => (
+              <div key={line.label}>
+                <span className={labelClass}>{line.label}</span>
+                <p
+                  className={
+                    line.emphasis
+                      ? "text-sm font-semibold text-slate-900"
+                      : "text-sm text-slate-900"
+                  }
+                >
+                  {line.value}
+                </p>
+              </div>
+            ))}
 
             <div>
-              <span className={labelClass}>Moms</span>
+              <span className={labelClass}>Moms-detaljer</span>
               {order.vatRate != null ? (
                 <>
                   <p className="text-sm text-slate-900">
-                    {order.vatRate}% ({order.vatDestination}
-                    {order.vatType ? `, ${order.vatType}` : ""})
+                    {order.vatDestination}
+                    {order.vatType ? ` · ${order.vatType}` : ""}
                   </p>
                   {order.vatNote && (
                     <p className="mt-1 text-xs text-slate-400">{order.vatNote}</p>

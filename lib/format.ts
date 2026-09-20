@@ -83,6 +83,45 @@ export function formatAddressLines(address: PostalAddressInfo): string[] {
   return lines;
 }
 
+export type VatBreakdownInput = {
+  subtotalAmount: number | null;
+  vatAmount: number | null;
+  totalAmount: number | null;
+  vatRate: number | null;
+};
+
+export type VatBreakdownLine = { label: string; value: string; emphasis?: boolean };
+
+/**
+ * Fælles moms-opstilling — samme tre linjer (varer ekskl. moms, moms,
+ * total) i kurven, kvitteringssiden, kunde-/admin-ordrevisningen og begge
+ * ordre-mails. vatRate/vatAmount kan være null (ukendt leveringsland/ingen
+ * aktiv momsregel) — vises da som en tydelig "kan ikke beregnes"-linje i
+ * stedet for at gætte 0 kr, jf. princippet om aldrig at antage en sats.
+ * Momslinjen vises altid når der er en subtotal, ALDRIG skjult ved 0% —
+ * gennemsigtighed for GL/FO-ordrer, ikke kun DK.
+ */
+export function formatVatBreakdownLines(input: VatBreakdownInput): VatBreakdownLine[] {
+  const lines: VatBreakdownLine[] = [];
+
+  if (input.subtotalAmount != null) {
+    lines.push({ label: "Varer (ekskl. moms)", value: formatPrice(input.subtotalAmount) });
+
+    if (input.vatRate != null && input.vatAmount != null) {
+      lines.push({ label: `Moms (${input.vatRate}%)`, value: formatPrice(input.vatAmount) });
+    } else {
+      lines.push({ label: "Moms", value: "Kan ikke beregnes (ukendt leveringsland)" });
+    }
+  }
+
+  // Altid en Total-linje, også når intet kan beregnes endnu (formatPrice(null)
+  // giver selv "Pris oplyses snarest") — samme fallback som resten af UI'et
+  // bruger for uprissatte varer, ikke en tom/manglende linje.
+  lines.push({ label: "Total", value: formatPrice(input.totalAmount), emphasis: true });
+
+  return lines;
+}
+
 const COMBINING_DIACRITICS = new RegExp("[̀-ͯ]", "g");
 
 export function slugify(input: string): string {

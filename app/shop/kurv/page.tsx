@@ -5,7 +5,8 @@ import { isInvoiceApproved } from "@/lib/checkout";
 import { getCustomerDiscount } from "@/lib/discount-groups";
 import { validateCampaignCode, computeLineDiscount } from "@/lib/campaign-codes";
 import { listAddresses } from "@/lib/delivery-addresses";
-import { formatPrice, roundCurrency, displayName } from "@/lib/format";
+import { formatPrice, roundCurrency, displayName, formatVatBreakdownLines } from "@/lib/format";
+import { resolveVatSnapshot, computeVatBreakdown } from "@/lib/vat-rules";
 import { ProductImage } from "../product-image";
 import { SaveButton } from "@/components/save-button";
 import { updateCartItemAction, removeCartItemAction } from "./actions";
@@ -85,6 +86,16 @@ export default async function CartPage({
       }
     : null;
 
+  // Forhåndsvisning af moms FØR nogen ordre findes — baseret på standard-
+  // leveringsadressens land, samme opslag som ved selve ordreoprettelsen
+  // (ingen ny/separat logik). Vælger kunden "Lever til en anden adresse"
+  // ved selve checkout, kan den faktiske ordre afvige herfra — samme
+  // begrænsning som resten af totalerne på denne side, der heller ikke
+  // reagerer live på det valg.
+  const previewVatSnapshot = defaultAddress
+    ? await resolveVatSnapshot(defaultAddress.country)
+    : null;
+
   const itemsWithoutPrice = cart.items.filter((item) => item.basePrice == null);
   const pricedItems = cart.items.filter((item) => item.basePrice != null);
 
@@ -137,9 +148,9 @@ export default async function CartPage({
               <th className={cellClass}>Billede</th>
               <th className={cellClass}>Vare</th>
               <th className={cellClass}>Antal</th>
-              <th className={cellClass}>Normalpris</th>
+              <th className={cellClass}>Normalpris (ekskl. moms)</th>
               <th className={cellClass}>Rabat</th>
-              <th className={cellClass}>Subtotal</th>
+              <th className={cellClass}>Subtotal (ekskl. moms)</th>
               <th className={cellClass}></th>
             </tr>
           </thead>
@@ -267,9 +278,21 @@ export default async function CartPage({
                 Kampagnerabat ({campaignCode?.code}): -{formatPrice(campaignDiscountTotal)}
               </p>
             )}
-            <p className="text-lg font-semibold text-slate-900">
-              Endelig pris: {formatPrice(discountedTotal)}
-            </p>
+            {formatVatBreakdownLines({
+              ...computeVatBreakdown(roundCurrency(discountedTotal), previewVatSnapshot),
+              vatRate: previewVatSnapshot?.vatRate ?? null,
+            }).map((line) => (
+              <p
+                key={line.label}
+                className={
+                  line.emphasis
+                    ? "text-lg font-semibold text-slate-900"
+                    : "text-sm text-slate-500"
+                }
+              >
+                {line.label}: {line.value}
+              </p>
+            ))}
           </>
         )}
 

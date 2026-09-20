@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getOrderForCustomer, PAYMENT_METHOD_LABELS } from "@/lib/orders";
-import { formatPrice, formatDate, formatAddressLines } from "@/lib/format";
+import { formatPrice, formatDate, formatAddressLines, formatVatBreakdownLines } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
 
@@ -78,20 +78,25 @@ export default async function CustomerOrderDetailPage({
               <span className={labelClass}>Ekspeditionsstatus</span>
               <p className="text-sm text-slate-900">{order.fulfillmentStatusLabel}</p>
             </div>
-            <div>
-              <span className={labelClass}>Samlet beløb</span>
-              <p className="text-sm font-semibold text-slate-900">
-                {formatPrice(order.totalAmount)}
-              </p>
-            </div>
-            {order.vatRate != null && (
-              <div>
-                <span className={labelClass}>Moms</span>
-                <p className="text-sm text-slate-900">
-                  {order.vatRate}%{order.vatType ? ` (${order.vatType})` : ""}
+            {formatVatBreakdownLines({
+              subtotalAmount: order.subtotalAmount,
+              vatAmount: order.vatAmount,
+              totalAmount: order.totalAmount,
+              vatRate: order.vatRate,
+            }).map((line) => (
+              <div key={line.label}>
+                <span className={labelClass}>{line.label}</span>
+                <p
+                  className={
+                    line.emphasis
+                      ? "text-sm font-semibold text-slate-900"
+                      : "text-sm text-slate-900"
+                  }
+                >
+                  {line.value}
                 </p>
               </div>
-            )}
+            ))}
           </div>
         </div>
       </div>
