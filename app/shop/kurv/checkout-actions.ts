@@ -1,34 +1,15 @@
 "use server";
 
-import crypto from "node:crypto";
 import { revalidatePath, refresh } from "next/cache";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listAddresses, type DeliveryAddress } from "@/lib/delivery-addresses";
 import { getCart, type CartItem } from "@/lib/cart";
-import { getCustomerDiscount } from "@/lib/discount-groups";
-import {
-  validateCampaignCode,
-  computeLineDiscount,
-  type ValidatedCampaignCode,
-} from "@/lib/campaign-codes";
 import { createPaymentAndLink } from "@/lib/quickpay";
 import { sendInvoiceOrderNotification, sendOrderConfirmation } from "@/lib/order-mail";
-import { roundCurrency } from "@/lib/format";
-import { resolveVatSnapshot, computeVatBreakdown, type VatSnapshot } from "@/lib/vat-rules";
 
 export type CheckoutState = { error: string | null };
-
-type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
-
-function generateOrderReference(): string {
-  // Quickpays order_id skal matche ^[a-zA-Z0-9]{4,20}$ — UUID uden
-  // bindestreger er altid 32 hex-tegn, trunkeres til 20. Bruges også til
-  // faktura-ordrer for en ensartet, kort ordrereference på tværs af begge
-  // betalingsspor.
-  return crypto.randomUUID().replace(/-/g, "").slice(0, 20);
-}
 
 type ResolvedDeliveryAddress = {
   recipientName: string;
@@ -98,188 +79,72 @@ function requireTermsAccepted(formData: FormData): { error: string } | null {
   return null;
 }
 
+type CreateCustomerOrderRow = {
+  order_id: string;
+  order_reference: string;
+  subtotal_amount: number | null;
+  vat_amount: number | null;
+  total_amount: number | null;
+};
+
 /**
- * Læser kampagnekode-feltet fra formularen (samme skjulte-input-mønster som
- * leveringsadressen, se delivery-address-fields.tsx) og validerer den
- * server-side — aldrig via klientens egen session (campaign_codes har intet
- * grant til authenticated, se migration 0027). Tomt felt = ingen kode,
- * ikke en fejl. En UGYLDIG kode afviser derimod hele checkout'en med en
- * tydelig besked, jf. kravet om at kunden aldrig stille mister rabatten.
+ * ENESTE vej til at oprette en ordre (migration 0032/0033) — kunden har
+ * ikke længere direkte INSERT-adgang til orders/order_items overhovedet.
+ * RPC'en genberegner ALT server-side (pris, rabat, kampagnekode, moms) og
+ * opretter ordrehoved + alle linjer i én transaktion — herfra sendes
+ * ALDRIG et beløb, kun produkt-id'er/antal og ren tekst (leverings-
+ * adresse, betalingsmetode, kampagnekode). Se create_customer_order() i
+ * 0033 for selve genberegningen, som spejler (og nu er den autoritative
+ * version af) lib/discount-groups.ts, lib/campaign-codes.ts og
+ * lib/vat-rules.ts — de TS-funktioner rører vi ikke, de driver fortsat
+ * kun kurv-sidens forhåndsvisning.
+ *
+ * error.code 'P0001' er plpgsql's standard-SQLSTATE for et almindeligt
+ * `raise exception` UDEN eksplicit ERRCODE — det er sådan funktionens
+ * egne, bevidste danske fejlbeskeder ("Din konto er ikke godkendt til
+ * fakturabetaling." osv.) kan skelnes fra en uventet databasefejl (som
+ * aldrig bør vises råt til kunden), samme mønster som `error.code ===
+ * "23505"` allerede brugte i denne fil før omlægningen.
  */
-async function resolveCampaignCode(
-  formData: FormData,
-): Promise<{ campaignCode: ValidatedCampaignCode | null } | { error: string }> {
-  const raw = ((formData.get("campaignCode") as string) ?? "").trim();
-  if (!raw) {
-    return { campaignCode: null };
-  }
+async function callCreateCustomerOrder(
+  customerId: string,
+  items: CartItem[],
+  paymentMethod: "kort" | "faktura",
+  deliveryAddress: ResolvedDeliveryAddress,
+  campaignCodeRaw: string,
+): Promise<{ order: CreateCustomerOrderRow } | { error: string }> {
+  const supabaseAdmin = createAdminClient();
 
-  const result = await validateCampaignCode(raw);
-  if (!result.valid) {
-    return { error: result.error };
-  }
+  const { data, error } = await supabaseAdmin.rpc("create_customer_order", {
+    p_customer_id: customerId,
+    p_items: items.map((item) => ({ product_id: item.productId, quantity: item.quantity })),
+    p_payment_method: paymentMethod,
+    p_delivery_recipient_name: deliveryAddress.recipientName,
+    p_delivery_address_line1: deliveryAddress.addressLine1,
+    p_delivery_address_line2: deliveryAddress.addressLine2,
+    p_delivery_postal_code: deliveryAddress.postalCode,
+    p_delivery_city: deliveryAddress.city,
+    p_delivery_country: deliveryAddress.country,
+    p_campaign_code: campaignCodeRaw.trim() || null,
+  });
 
-  return { campaignCode: result.campaignCode };
-}
-
-async function createOrderWithReference(
-  supabase: SupabaseServerClient,
-  input: {
-    customerId: string;
-    deliveryAddress: ResolvedDeliveryAddress;
-    paymentMethod: "kort" | "faktura";
-    status: string;
-    subtotalAmount: number | null;
-    vatAmount: number | null;
-    totalAmount: number | null;
-    vatSnapshot: VatSnapshot | null;
-    discountPercent: number;
-    discountLabel: string;
-    campaignCodeSnapshot: string | null;
-  },
-): Promise<{ orderId: string; orderReference: string } | { error: string }> {
-  let orderReference = generateOrderReference();
-
-  // Fastfryses ved oprettelse (samme princip som leveringsadresse/priser) —
-  // en senere ændring af kundens eksterne kundenummer må ikke ændre
-  // historiske ordrer. Valgfrit felt, så null er en normal værdi her.
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("external_customer_number")
-    .eq("id", input.customerId)
-    .maybeSingle();
-  const externalCustomerNumberSnapshot =
-    (profile?.external_customer_number as string | null) ?? null;
-
-  for (let attempt = 0; attempt < 5; attempt++) {
-    const { data: order, error } = await supabase
-      .from("orders")
-      .insert({
-        customer_id: input.customerId,
-        delivery_recipient_name: input.deliveryAddress.recipientName,
-        delivery_address_line1: input.deliveryAddress.addressLine1,
-        delivery_address_line2: input.deliveryAddress.addressLine2,
-        delivery_postal_code: input.deliveryAddress.postalCode,
-        delivery_city: input.deliveryAddress.city,
-        delivery_country: input.deliveryAddress.country,
-        payment_method: input.paymentMethod,
-        status: input.status,
-        subtotal_amount: input.subtotalAmount,
-        vat_amount: input.vatAmount,
-        total_amount: input.totalAmount,
-        order_reference: orderReference,
-        discount_percent: input.discountPercent,
-        discount_label: input.discountLabel,
-        external_customer_number_snapshot: externalCustomerNumberSnapshot,
-        campaign_code_snapshot: input.campaignCodeSnapshot,
-        vat_rate: input.vatSnapshot?.vatRate ?? null,
-        vat_type: input.vatSnapshot?.vatType ?? null,
-        vat_destination: input.vatSnapshot?.vatDestination ?? null,
-        vat_note: input.vatSnapshot?.vatNote ?? null,
-      })
-      .select("id")
-      .single();
-
-    if (!error && order) {
-      return { orderId: order.id as string, orderReference };
+  if (error || !data || data.length === 0) {
+    console.error("[callCreateCustomerOrder]", error);
+    if (error?.code === "P0001") {
+      return { error: error.message };
     }
-    if (error && error.code !== "23505") {
-      console.error("[createOrderWithReference]", error);
-      return { error: "Kunne ikke oprette ordren. Prøv igen." };
-    }
-    orderReference = generateOrderReference();
+    return { error: "Kunne ikke oprette ordren. Prøv igen." };
   }
 
-  return { error: "Kunne ikke generere et unikt ordre-id. Prøv igen." };
+  return { order: data[0] as CreateCustomerOrderRow };
 }
 
 /**
- * Beregner rabatteret pris PR. LINJE (base_price_snapshot = normalpris,
- * unit_price_snapshot = det kunden reelt betaler) og indsætter ordrelinjerne.
- * Hver linje får den bedste af kundens eget rabatniveau og en evt.
- * kampagnekode (se computeLineDiscount) — kampagne-andelen af rabatten
- * gemmes separat i campaign_discount_snapshot, samme fastfrysningsprincip
- * som sku_snapshot, så en senere redigering/udløb af koden ikke ændrer
- * historiske ordrer. Varer uden base_price ("pris oplyses snarest") får
- * fortsat ingen pris — intet at beregne rabat på.
- */
-async function insertOrderItems(
-  supabase: SupabaseServerClient,
-  orderId: string,
-  items: CartItem[],
-  customerDiscountPercent: number,
-  campaignCode: ValidatedCampaignCode | null,
-): Promise<string | null> {
-  const { error } = await supabase.from("order_items").insert(
-    items.map((item) => {
-      if (item.basePrice == null) {
-        return {
-          order_id: orderId,
-          product_id: item.productId,
-          sku_snapshot: item.sku,
-          name_snapshot: item.name,
-          name_snapshot_da: item.nameDa,
-          base_price_snapshot: null,
-          unit_price_snapshot: null,
-          campaign_discount_snapshot: null,
-          quantity: item.quantity,
-        };
-      }
-
-      const line = computeLineDiscount(
-        item.basePrice,
-        item.vendorId,
-        customerDiscountPercent,
-        campaignCode,
-      );
-
-      return {
-        order_id: orderId,
-        product_id: item.productId,
-        sku_snapshot: item.sku,
-        name_snapshot: item.name,
-        name_snapshot_da: item.nameDa,
-        base_price_snapshot: item.basePrice,
-        unit_price_snapshot: line.unitPrice,
-        campaign_discount_snapshot: line.usedCampaign ? line.campaignDiscountPerUnit : null,
-        quantity: item.quantity,
-      };
-    }),
-  );
-
-  if (error) {
-    console.error("[insertOrderItems]", error);
-    return "Kunne ikke oprette ordrelinjerne. Prøv igen.";
-  }
-  return null;
-}
-
-function computeDiscountedTotal(
-  items: CartItem[],
-  customerDiscountPercent: number,
-  campaignCode: ValidatedCampaignCode | null,
-): number | null {
-  const pricedItems = items.filter((item) => item.basePrice != null);
-  if (pricedItems.length === 0) return null;
-
-  return roundCurrency(
-    pricedItems.reduce((sum, item) => {
-      const line = computeLineDiscount(
-        item.basePrice!,
-        item.vendorId,
-        customerDiscountPercent,
-        campaignCode,
-      );
-      return sum + line.unitPrice * item.quantity;
-    }, 0),
-  );
-}
-
-/**
- * Starter kort-betaling for hele kurven: opretter en ordre + ordrelinjer
- * (med kundens rabat anvendt), beder Quickpay om et betalingslink for det
- * RABATTEREDE beløb, og redirecter kunden dertil. Faktura-sporet rører
- * denne funktion ikke ved.
+ * Starter kort-betaling for hele kurven: opretter ordre + ordrelinjer via
+ * create_customer_order() (rabat/moms/pris genberegnet server-side), beder
+ * Quickpay om et betalingslink for det AF FUNKTIONEN returnerede beløb
+ * (aldrig et lokalt genberegnet tal), og redirecter kunden dertil.
+ * Faktura-sporet rører denne funktion ikke ved.
  */
 export async function initiateCardCheckoutAction(
   _prevState: CheckoutState,
@@ -304,9 +169,8 @@ export async function initiateCardCheckoutAction(
     return { error: "Kurven er tom." };
   }
 
-  // Vi kan ikke sende kunden til betaling for et beløb vi ikke kender —
-  // ikke dækket af den oprindelige prompt, men nødvendigt for at undgå at
-  // opkræve et ufuldstændigt beløb.
+  // Hurtigt, venligt fejlsvar uden en RPC-tur — den reelle, autoritative
+  // håndhævelse af denne regel sker inde i create_customer_order() selv.
   if (cart.items.some((item) => item.basePrice == null)) {
     return {
       error:
@@ -320,68 +184,36 @@ export async function initiateCardCheckoutAction(
     return { error: resolved.error };
   }
 
-  const campaignResolved = await resolveCampaignCode(formData);
-  if ("error" in campaignResolved) {
-    return { error: campaignResolved.error };
-  }
-  const { campaignCode } = campaignResolved;
+  const campaignCodeRaw = (formData.get("campaignCode") as string) ?? "";
 
-  const discount = await getCustomerDiscount();
-  const subtotal = computeDiscountedTotal(cart.items, discount.percent, campaignCode);
-  if (subtotal == null) {
-    return { error: "Kunne ikke beregne et beløb for kurven." };
-  }
-
-  // Fastfryses FØR ordren oprettes, samme princip som resten af
-  // snapshottene — en senere rettelse i vat_rules må ikke ændre en
-  // allerede oprettet ordre. Intet match (ukendt land/ingen aktiv regel)
-  // giver bevidst vatAmount=null og totalAmount=subtotal, ikke en gættet
-  // sats — se computeVatBreakdown().
-  const vatSnapshot = await resolveVatSnapshot(resolved.country);
-  const { subtotalAmount, vatAmount, totalAmount } = computeVatBreakdown(subtotal, vatSnapshot);
-  if (totalAmount == null) {
-    return { error: "Kunne ikke beregne et beløb for kurven." };
-  }
-
-  const created = await createOrderWithReference(supabase, {
-    customerId: user.id,
-    deliveryAddress: resolved,
-    paymentMethod: "kort",
-    status: "afventer_betaling",
-    subtotalAmount,
-    vatAmount,
-    totalAmount,
-    vatSnapshot,
-    discountPercent: discount.percent,
-    discountLabel: discount.label,
-    campaignCodeSnapshot: campaignCode?.code ?? null,
-  });
+  const created = await callCreateCustomerOrder(
+    user.id,
+    cart.items,
+    "kort",
+    resolved,
+    campaignCodeRaw,
+  );
   if ("error" in created) {
     return { error: created.error };
   }
-  const { orderId, orderReference } = created;
+  const { order } = created;
 
-  const itemsError = await insertOrderItems(
-    supabase,
-    orderId,
-    cart.items,
-    discount.percent,
-    campaignCode,
-  );
-  if (itemsError) {
-    return { error: itemsError };
+  if (order.total_amount == null) {
+    // Bør ikke kunne ske — create_customer_order() afviser allerede kort
+    // uden en kendt pris — men beholdt som sidste sikkerhedsnet, så vi
+    // aldrig kalder Quickpay uden et beløb.
+    console.error("[initiateCardCheckoutAction] RPC returnerede intet total_amount", order);
+    return { error: "Kunne ikke beregne et beløb for kurven." };
   }
 
   let linkUrl: string;
   try {
-    // Beløbet sendt til Quickpay er nu det inkl. moms (totalAmount), ikke
-    // det gamle ex-moms-tal — det er dette der reelt skal opkræves.
-    const amountInOre = Math.round(totalAmount * 100);
-    const result = await createPaymentAndLink(orderReference, amountInOre);
+    const amountInOre = Math.round(order.total_amount * 100);
+    const result = await createPaymentAndLink(order.order_reference, amountInOre);
     linkUrl = result.linkUrl;
 
-    // orders har kun select+insert til authenticated (0011) — statusfelter
-    // og Quickpay-referencer opdateres via service_role.
+    // orders har intet update-grant til authenticated (0011/0032) —
+    // Quickpay-referencerne skrives via service_role.
     const supabaseAdmin = createAdminClient();
     await supabaseAdmin
       .from("orders")
@@ -389,7 +221,7 @@ export async function initiateCardCheckoutAction(
         quickpay_payment_id: result.paymentId,
         quickpay_link_url: result.linkUrl,
       })
-      .eq("id", orderId);
+      .eq("id", order.order_id);
   } catch (err) {
     console.error("[initiateCardCheckoutAction] quickpay", err);
     return { error: "Kunne ikke starte betalingen hos Quickpay. Prøv igen." };
@@ -425,6 +257,8 @@ export async function initiateInvoiceCheckoutAction(
     return termsError;
   }
 
+  // Hurtigt, venligt fejlsvar uden en RPC-tur — samme regel håndhæves
+  // (uændret) igen inde i create_customer_order() selv, jf. prompten.
   const { data: profile } = await supabase
     .from("profiles")
     .select("invoice_approved")
@@ -446,49 +280,19 @@ export async function initiateInvoiceCheckoutAction(
     return { error: resolved.error };
   }
 
-  const campaignResolved = await resolveCampaignCode(formData);
-  if ("error" in campaignResolved) {
-    return { error: campaignResolved.error };
-  }
-  const { campaignCode } = campaignResolved;
+  const campaignCodeRaw = (formData.get("campaignCode") as string) ?? "";
 
-  const discount = await getCustomerDiscount();
-  const subtotal = computeDiscountedTotal(cart.items, discount.percent, campaignCode);
-
-  // Fastfryses FØR ordren oprettes — se samme kommentar i
-  // initiateCardCheckoutAction. Faktura-sporet tillader fortsat et null
-  // subtotal (nogle/alle linjer uden pris endnu, sælger følger op manuelt).
-  const vatSnapshot = await resolveVatSnapshot(resolved.country);
-  const { subtotalAmount, vatAmount, totalAmount } = computeVatBreakdown(subtotal, vatSnapshot);
-
-  const created = await createOrderWithReference(supabase, {
-    customerId: user.id,
-    deliveryAddress: resolved,
-    paymentMethod: "faktura",
-    status: "afventer",
-    subtotalAmount,
-    vatAmount,
-    totalAmount,
-    vatSnapshot,
-    discountPercent: discount.percent,
-    discountLabel: discount.label,
-    campaignCodeSnapshot: campaignCode?.code ?? null,
-  });
+  const created = await callCreateCustomerOrder(
+    user.id,
+    cart.items,
+    "faktura",
+    resolved,
+    campaignCodeRaw,
+  );
   if ("error" in created) {
     return { error: created.error };
   }
-  const { orderId, orderReference } = created;
-
-  const itemsError = await insertOrderItems(
-    supabase,
-    orderId,
-    cart.items,
-    discount.percent,
-    campaignCode,
-  );
-  if (itemsError) {
-    return { error: itemsError };
-  }
+  const { order } = created;
 
   if (cart.id) {
     await supabase.from("cart_items").delete().eq("cart_id", cart.id);
@@ -502,9 +306,9 @@ export async function initiateInvoiceCheckoutAction(
   }
 
   await Promise.all([
-    sendInvoiceOrderNotification(orderId),
-    sendOrderConfirmation(orderId),
+    sendInvoiceOrderNotification(order.order_id),
+    sendOrderConfirmation(order.order_id),
   ]);
 
-  redirect(`/shop/checkout/kvittering?order=${orderReference}`);
+  redirect(`/shop/checkout/kvittering?order=${order.order_reference}`);
 }

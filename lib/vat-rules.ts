@@ -154,8 +154,10 @@ export type VatAmounts = {
 };
 
 /**
- * subtotal er den rabatterede, ex-moms varesum (samme tal
- * computeDiscountedTotal() i checkout-actions.ts altid har beregnet).
+ * subtotal er den rabatterede, ex-moms varesum. Bruges i dag kun af
+ * kurv-sidens forhåndsvisning (app/shop/kurv/page.tsx) — selve
+ * ordreoprettelsen genberegner det tilsvarende tal server-side inde i
+ * create_customer_order() (migration 0033), ikke via denne funktion.
  * totalAmount er det FAKTISK opkrævede/betalte beløb (inkl. moms) — det er
  * dette tal der skal bruges til Quickpay og som ordrens total, ikke
  * subtotalAmount. Intet vatSnapshot (ukendt leveringsland/ingen aktiv
