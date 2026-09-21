@@ -188,6 +188,24 @@ export async function updateCustomer(
     return { success: false };
   }
 
+  // is_active=false lukker adgangen med det samme på RLS-niveau (se
+  // public.is_active_profile(), migration 0035) — det er den reelle,
+  // øjeblikkelige spærring. ban_duration er et EKSTRA lag ovenpå: den
+  // forhindrer nyt login/token-refresh, men tilbagekalder ikke et allerede
+  // udstedt, endnu-ikke-udløbet access token (Supabase Admin API tilbyder
+  // ingen "log denne bruger-id ud alle steder"-metode — kun signOut(jwt),
+  // som kræver selve den levende JWT, som vi ikke opbevarer server-side).
+  // Sættes/ryddes ubetinget efter den indsendte isActive-værdi hver gang —
+  // idempotent, og undgår at skulle slå den tidligere værdi op først.
+  const { error: banError } = await supabaseAdmin.auth.admin.updateUserById(
+    input.customerId,
+    { ban_duration: input.isActive ? "none" : "876000h" },
+  );
+
+  if (banError) {
+    console.error("[updateCustomer] ban_duration", banError);
+  }
+
   return { success: true };
 }
 

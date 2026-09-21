@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole, requireTargetRole } from "@/lib/admin-guard";
 import { updateCustomer } from "@/lib/customers";
 
 function parseOptionalNumber(raw: FormDataEntryValue | null): number | null {
@@ -10,6 +11,8 @@ function parseOptionalNumber(raw: FormDataEntryValue | null): number | null {
 }
 
 export async function updateCustomerAction(formData: FormData) {
+  await requireRole("admin");
+
   const customerId = formData.get("customerId") as string;
   const discountGroup = ((formData.get("discountGroup") as string) ?? "").trim();
   const isActive = formData.get("isActive") === "on";
@@ -17,6 +20,8 @@ export async function updateCustomerAction(formData: FormData) {
   const paymentMethod = ((formData.get("paymentMethod") as string) ?? "").trim();
 
   if (!customerId || !discountGroup) return;
+
+  await requireTargetRole(customerId, ["kunde"]);
 
   const externalCustomerNumber =
     ((formData.get("externalCustomerNumber") as string) ?? "").trim() || null;

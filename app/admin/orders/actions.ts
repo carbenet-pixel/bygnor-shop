@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/admin-guard";
 import { updateInvoiceOrderStatus, updateOrderFulfillmentStatus } from "@/lib/orders-admin";
 
 export async function updateOrderStatusAction(formData: FormData) {
+  await requireRole("admin");
+
   const orderId = (formData.get("orderId") as string) ?? "";
   const status = (formData.get("status") as string) ?? "";
 
@@ -16,6 +19,8 @@ export async function updateOrderStatusAction(formData: FormData) {
 }
 
 export async function updateOrderFulfillmentStatusAction(formData: FormData) {
+  await requireRole("admin");
+
   const orderId = (formData.get("orderId") as string) ?? "";
   const fulfillmentStatus = (formData.get("fulfillmentStatus") as string) ?? "";
 

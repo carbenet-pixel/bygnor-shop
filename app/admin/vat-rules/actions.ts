@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/admin-guard";
 import { updateVatRule } from "@/lib/vat-rules";
 
 export async function updateVatRuleAction(formData: FormData) {
+  await requireRole("superadmin");
+
   const destinationCountry = (formData.get("destinationCountry") as string) ?? "";
   const vatRateRaw = ((formData.get("vatRate") as string) ?? "").trim();
   const invoiceNote = ((formData.get("invoiceNote") as string) ?? "").trim();

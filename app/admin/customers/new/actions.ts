@@ -1,5 +1,6 @@
 "use server";
 
+import { AuthorizationError, requireRole } from "@/lib/admin-guard";
 import {
   createCustomerAsAdmin,
   type AdminCreateCustomerErrorCode,
@@ -20,6 +21,19 @@ export async function createCustomer(
   _prevState: CreateCustomerState,
   formData: FormData,
 ): Promise<CreateCustomerState> {
+  try {
+    await requireRole("admin");
+  } catch (err) {
+    if (err instanceof AuthorizationError) {
+      // CreateCustomerState's error er en lukket kode-union (se
+      // lib/customer-application.ts), ikke fri tekst — "server_error" er
+      // det nærmeste, generiske match, og formularen falder allerede
+      // tilbage til den for enhver ukendt kode.
+      return { error: "server_error", success: false };
+    }
+    throw err;
+  }
+
   const paymentMethod = formData.get("paymentMethod");
 
   const result = await createCustomerAsAdmin({

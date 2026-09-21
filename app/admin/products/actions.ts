@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { AuthorizationError, requireRole } from "@/lib/admin-guard";
 import { updateProduct, updateProductImageUrl } from "@/lib/products-admin";
 import { convertAndUploadProductImage } from "@/lib/product-image";
 
@@ -11,6 +12,8 @@ function parseOptionalNumber(raw: FormDataEntryValue | null): number | null {
 }
 
 export async function updateProductAction(formData: FormData) {
+  await requireRole("admin");
+
   const productId = (formData.get("productId") as string) ?? "";
   if (!productId) return;
 
@@ -38,6 +41,15 @@ export async function uploadProductImageAction(
   _prevState: UploadImageState,
   formData: FormData,
 ): Promise<UploadImageState> {
+  try {
+    await requireRole("admin");
+  } catch (err) {
+    if (err instanceof AuthorizationError) {
+      return { error: err.message, success: false };
+    }
+    throw err;
+  }
+
   const productId = (formData.get("productId") as string) ?? "";
   const sku = (formData.get("sku") as string) ?? "";
   const image = formData.get("image");

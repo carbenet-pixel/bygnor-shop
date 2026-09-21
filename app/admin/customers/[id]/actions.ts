@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { AuthorizationError, requireRole, requireTargetRole } from "@/lib/admin-guard";
 import {
   updateAddress,
   createAddress,
@@ -17,6 +18,8 @@ function strOrNull(formData: FormData, name: string): string | null {
 }
 
 export async function updateAddressAction(formData: FormData) {
+  await requireRole("admin");
+
   const addressId = str(formData, "addressId");
   const customerId = str(formData, "customerId");
 
@@ -37,6 +40,8 @@ export async function updateAddressAction(formData: FormData) {
 }
 
 export async function createAddressAction(formData: FormData) {
+  await requireRole("admin");
+
   const customerId = str(formData, "customerId");
 
   if (!customerId) return;
@@ -56,6 +61,8 @@ export async function createAddressAction(formData: FormData) {
 }
 
 export async function setDefaultAddressAction(formData: FormData) {
+  await requireRole("admin");
+
   const customerId = str(formData, "customerId");
   const addressId = str(formData, "defaultAddressId");
 
@@ -66,9 +73,20 @@ export async function setDefaultAddressAction(formData: FormData) {
 }
 
 export async function resetCustomerMfaAction(formData: FormData) {
+  const { userId: callerId } = await requireRole("admin");
+
   const customerId = str(formData, "customerId");
 
   if (!customerId) return;
+
+  // Selv-targeting via admin-nulstillingen er bevidst blokeret — en admin
+  // kan pr. definition ikke have role='kunde', så dette rammer reelt kun
+  // som en dobbelt sikring, men holdes ens med resetUserMfaAction nedenfor.
+  if (customerId === callerId) {
+    throw new AuthorizationError("Brug din egen kontos 2FA-indstillinger for at nulstille din egen.");
+  }
+
+  await requireTargetRole(customerId, ["kunde"]);
 
   await resetUserMfa(customerId);
   revalidatePath(`/admin/customers/${customerId}`);

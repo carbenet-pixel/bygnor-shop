@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { AuthorizationError, requireRole } from "@/lib/admin-guard";
 import { createProduct, updateProductImageUrl } from "@/lib/products-admin";
 import { convertAndUploadProductImage } from "@/lib/product-image";
 
@@ -20,6 +21,15 @@ export async function createProductAction(
   _prevState: CreateProductState,
   formData: FormData,
 ): Promise<CreateProductState> {
+  try {
+    await requireRole("admin");
+  } catch (err) {
+    if (err instanceof AuthorizationError) {
+      return { error: err.message, success: false, warning: null };
+    }
+    throw err;
+  }
+
   const sku = ((formData.get("sku") as string) ?? "").trim();
   const vatRateRaw = parseOptionalNumber(formData.get("vatRate"));
 

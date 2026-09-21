@@ -1,7 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { createClient } from "@/lib/supabase/server";
+import { AuthorizationError, requireRole } from "@/lib/admin-guard";
 import {
   createCampaignCode,
   updateCampaignCode,
@@ -27,15 +27,17 @@ export async function createCampaignCodeAction(
   _prevState: CampaignCodeFormState,
   formData: FormData,
 ): Promise<CampaignCodeFormState> {
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { error: "Ikke logget ind.", success: false };
+  let userId: string;
+  try {
+    ({ userId } = await requireRole("admin"));
+  } catch (err) {
+    if (err instanceof AuthorizationError) {
+      return { error: err.message, success: false };
+    }
+    throw err;
   }
 
-  const result = await createCampaignCode(readCampaignCodeInput(formData), user.id);
+  const result = await createCampaignCode(readCampaignCodeInput(formData), userId);
 
   if (!result.success) {
     return { error: result.error, success: false };
@@ -46,6 +48,8 @@ export async function createCampaignCodeAction(
 }
 
 export async function updateCampaignCodeAction(formData: FormData) {
+  await requireRole("admin");
+
   const id = (formData.get("campaignCodeId") as string) ?? "";
   if (!id) return;
 

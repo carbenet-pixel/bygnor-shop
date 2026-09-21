@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { AuthorizationError, requireRole } from "@/lib/admin-guard";
 import { createCategory, updateCategory } from "@/lib/categories";
 import { slugify } from "@/lib/format";
 
@@ -18,6 +19,8 @@ function readCategoryInput(formData: FormData) {
 }
 
 export async function updateCategoryAction(formData: FormData) {
+  await requireRole("superadmin");
+
   const categoryId = (formData.get("categoryId") as string) ?? "";
   if (!categoryId) return;
 
@@ -33,6 +36,15 @@ export async function createCategoryAction(
   _prevState: CategoryFormState,
   formData: FormData,
 ): Promise<CategoryFormState> {
+  try {
+    await requireRole("superadmin");
+  } catch (err) {
+    if (err instanceof AuthorizationError) {
+      return { error: err.message, success: false };
+    }
+    throw err;
+  }
+
   const result = await createCategory(readCategoryInput(formData));
 
   if (!result.success) {

@@ -1,9 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { requireRole } from "@/lib/admin-guard";
 import { updateDiscountGroup } from "@/lib/discount-groups";
 
 export async function updateDiscountGroupAction(formData: FormData) {
+  await requireRole("superadmin");
+
   const id = formData.get("id") as string;
   const raw = ((formData.get("discountPercent") as string) ?? "").trim();
 
