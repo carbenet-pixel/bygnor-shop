@@ -1,4 +1,5 @@
 import "server-only";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/server";
 import { buildGroupImageFallbackMap, groupImageFallbackKey } from "@/lib/catalog";
 
@@ -212,37 +213,94 @@ export async function addToCart(
     cartId = newCart.id as string;
   }
 
-  // Findes varen allerede i kurven? Øg antal i stedet for at oprette en
-  // dublet-linje — unique(cart_id, product_id) fra migration 0011.
-  const { data: existing } = await supabase
-    .from("cart_items")
-    .select("id, quantity")
-    .eq("cart_id", cartId)
-    .eq("product_id", productId)
-    .maybeSingle();
+  // Atomisk sammenlægning — findes varen allerede, øges antal i samme
+  // statement (unique(cart_id, product_id) fra migration 0011 er selve
+  // konflikt-målet), ellers oprettes linjen. Erstatter et tidligere
+  // read-then-write (læs antal, beregn nyt, skriv tilbage), som kunne
+  // miste en tilføjelse ved to næsten samtidige forsøg (audit-fund #14).
+  // Se increment_cart_item() i 0037.
+  const { error } = await supabase.rpc("increment_cart_item", {
+    p_cart_id: cartId,
+    p_product_id: productId,
+    p_delta: quantity,
+  });
 
-  if (existing) {
-    const { error } = await supabase
-      .from("cart_items")
-      .update({ quantity: (existing.quantity as number) + quantity })
-      .eq("id", existing.id);
-
-    if (error) {
-      console.error("[addToCart] update", error);
-      return { success: false, error: "Kunne ikke opdatere kurven." };
-    }
-  } else {
-    const { error } = await supabase
-      .from("cart_items")
-      .insert({ cart_id: cartId, product_id: productId, quantity });
-
-    if (error) {
-      console.error("[addToCart] insert", error);
-      return { success: false, error: "Kunne ikke tilføje til kurven." };
-    }
+  if (error) {
+    console.error("[addToCart] increment_cart_item", error);
+    return { success: false, error: "Kunne ikke tilføje til kurven." };
   }
 
   return { success: true };
+}
+
+/**
+ * Rydder KUN de kurvlinjer der reelt blev bestilt — ikke hele kurven.
+ * Slås op mod order_items, den server-side snapshot create_customer_order()
+ * allerede skrev (0033) — ikke genudledt fra kurven selv. En kurvlinje der
+ * ikke matcher noget i ordren (fx en vare kunden tilføjede i en anden fane
+ * mens betalingen var i gang) røres slet ikke; en linje med et STØRRE
+ * antal end det bestilte får sit antal nedsat med det bestilte, ikke
+ * slettet (audit-fund #14).
+ */
+export async function clearPurchasedCartItems(
+  client: SupabaseClient,
+  cartId: string,
+  orderId: string,
+): Promise<void> {
+  const [{ data: orderItems, error: orderItemsError }, { data: cartItems, error: cartItemsError }] =
+    await Promise.all([
+      client.from("order_items").select("product_id, quantity").eq("order_id", orderId),
+      client.from("cart_items").select("id, product_id, quantity").eq("cart_id", cartId),
+    ]);
+
+  if (orderItemsError || !orderItems) {
+    console.error("[clearPurchasedCartItems] order_items", orderItemsError);
+    return;
+  }
+
+  if (cartItemsError || !cartItems) {
+    console.error("[clearPurchasedCartItems] cart_items", cartItemsError);
+    return;
+  }
+
+  const purchasedByProduct = new Map<string, number>();
+  for (const row of orderItems) {
+    purchasedByProduct.set(row.product_id as string, row.quantity as number);
+  }
+
+  const idsToDelete: string[] = [];
+  const updates: { id: string; quantity: number }[] = [];
+
+  for (const row of cartItems) {
+    const purchasedQuantity = purchasedByProduct.get(row.product_id as string);
+    if (purchasedQuantity == null) {
+      continue;
+    }
+
+    const cartQuantity = row.quantity as number;
+    if (cartQuantity <= purchasedQuantity) {
+      idsToDelete.push(row.id as string);
+    } else {
+      updates.push({ id: row.id as string, quantity: cartQuantity - purchasedQuantity });
+    }
+  }
+
+  if (idsToDelete.length > 0) {
+    const { error } = await client.from("cart_items").delete().in("id", idsToDelete);
+    if (error) {
+      console.error("[clearPurchasedCartItems] delete", error);
+    }
+  }
+
+  for (const update of updates) {
+    const { error } = await client
+      .from("cart_items")
+      .update({ quantity: update.quantity })
+      .eq("id", update.id);
+    if (error) {
+      console.error("[clearPurchasedCartItems] update", update.id, error);
+    }
+  }
 }
 
 export async function updateCartItemQuantity(

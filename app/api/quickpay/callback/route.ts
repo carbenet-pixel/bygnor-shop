@@ -3,6 +3,7 @@ import { revalidatePath } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyChecksum } from "@/lib/quickpay";
 import { sendOrderConfirmation, sendQuickpayMismatchAlert } from "@/lib/order-mail";
+import { clearPurchasedCartItems } from "@/lib/cart";
 
 type QuickpayCallbackOperation = {
   id?: number;
@@ -254,7 +255,9 @@ export async function POST(request: NextRequest) {
 
     // Kurven ryddes først her — betalingen er nu reelt bekræftet, ikke
     // bare fordi kunden er redirected til continue_url (browseren kan
-    // lukkes før den redirect når frem).
+    // lukkes før den redirect når frem). Kun de FAKTISK bestilte linjer
+    // fjernes (audit-fund #14) — en vare kunden har tilføjet i en anden
+    // fane mens betalingen var i gang bliver stående.
     const { data: cart } = await supabaseAdmin
       .from("carts")
       .select("id")
@@ -262,7 +265,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (cart) {
-      await supabaseAdmin.from("cart_items").delete().eq("cart_id", cart.id);
+      await clearPurchasedCartItems(supabaseAdmin, cart.id, order.id);
 
       // Callbacket kommer fra Quickpays server, ikke kundens egen browser
       // (refresh() fra next/cache virker kun i en Server Action) —

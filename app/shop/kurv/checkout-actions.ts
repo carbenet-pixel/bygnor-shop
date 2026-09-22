@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { listAddresses, type DeliveryAddress } from "@/lib/delivery-addresses";
-import { getCart, type CartItem } from "@/lib/cart";
+import { getCart, clearPurchasedCartItems, type CartItem } from "@/lib/cart";
 import { createPaymentAndLink } from "@/lib/quickpay";
 import { sendInvoiceOrderNotification, sendOrderConfirmation } from "@/lib/order-mail";
 
@@ -213,15 +213,35 @@ export async function initiateCardCheckoutAction(
     linkUrl = result.linkUrl;
 
     // orders har intet update-grant til authenticated (0011/0032) —
-    // Quickpay-referencerne skrives via service_role.
+    // Quickpay-referencerne skrives via service_role. Fejler DENNE
+    // skrivning (forbigående DB-fejl/netværk), har callback-handleren
+    // ingen vej til at matche en senere Quickpay-bekræftelse til ordren
+    // (den slår op på quickpay_payment_id) — kunden må derfor IKKE sendes
+    // videre til Quickpay i så fald.
     const supabaseAdmin = createAdminClient();
-    await supabaseAdmin
+    const { error: quickpayRefError } = await supabaseAdmin
       .from("orders")
       .update({
         quickpay_payment_id: result.paymentId,
         quickpay_link_url: result.linkUrl,
       })
       .eq("id", order.order_id);
+
+    if (quickpayRefError) {
+      // Ordren efterlades bevidst i den status create_customer_order()
+      // allerede satte (afventer_betaling) — samme princip som når selve
+      // Quickpay-kaldet fejler nedenfor: vi ved ikke med sikkerhed at
+      // betalingen fejlede (linket blev rent faktisk oprettet hos
+      // Quickpay), kun at VI mistede sporet af det, så en gættet
+      // betaling_fejlet ville være misvisende. Kunden ser aldrig linket
+      // (ingen redirect), så intet betalingsforsøg kan reelt ske.
+      console.error(
+        "[initiateCardCheckoutAction] kunne ikke gemme quickpay_payment_id",
+        order.order_id,
+        quickpayRefError,
+      );
+      return { error: "Kunne ikke starte betalingen. Prøv igen." };
+    }
   } catch (err) {
     console.error("[initiateCardCheckoutAction] quickpay", err);
     return { error: "Kunne ikke starte betalingen hos Quickpay. Prøv igen." };
@@ -295,7 +315,12 @@ export async function initiateInvoiceCheckoutAction(
   const { order } = created;
 
   if (cart.id) {
-    await supabase.from("cart_items").delete().eq("cart_id", cart.id);
+    // Kun de FAKTISK bestilte linjer fjernes (audit-fund #14) — en vare
+    // kunden har tilføjet i en anden fane mens denne ordre blev oprettet
+    // bliver stående. Bruger service_role for konsistens med kort-sporet
+    // (route.ts), som er tvunget til det (intet session ved et webhook).
+    const supabaseAdmin = createAdminClient();
+    await clearPurchasedCartItems(supabaseAdmin, cart.id, order.order_id);
 
     // Kurven er ryddet med det samme her (modsat kort, hvor det sker i
     // Quickpay-callbacket) — sørg for at /shop/kurv og kurv-badge'et i

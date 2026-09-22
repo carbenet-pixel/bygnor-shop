@@ -18,16 +18,30 @@ export default async function CancelledCheckoutPage({
     const supabase = await createClient();
     const { data: order } = await supabase
       .from("orders")
-      .select("id, status")
+      .select("id")
       .eq("order_reference", orderReference)
       .maybeSingle();
 
-    if (order && order.status === "afventer_betaling") {
+    if (order) {
+      // Atomisk, betinget statusskift — samme mønster som Quickpay-
+      // callbackets (app/api/quickpay/callback/route.ts, audit-fund #7/#8):
+      // WHERE'et ER selve concurrency-sikringen, ikke den ovenfor
+      // udlæste (og potentielt allerede forældede) status. Et sent
+      // capture-callback der lander samtidig kan derfor ikke blive
+      // overskrevet af denne — og denne kan ikke overskrive en allerede
+      // betalt ordre — uanset hvilken af de to rammer databasen først.
+      // Gør siden sikker at genbesøge (reload, tilbage-knap, gammelt
+      // link) uden bivirkninger ud over det første, gyldige skift.
       const supabaseAdmin = createAdminClient();
-      await supabaseAdmin
+      const { error } = await supabaseAdmin
         .from("orders")
         .update({ status: "annulleret" })
-        .eq("id", order.id);
+        .eq("id", order.id)
+        .eq("status", "afventer_betaling");
+
+      if (error) {
+        console.error("[annulleret] kunne ikke opdatere ordre til annulleret", order.id, error);
+      }
     }
   }
 
