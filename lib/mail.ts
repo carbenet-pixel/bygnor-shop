@@ -50,3 +50,29 @@ export async function sendMail(message: MailMessage): Promise<void> {
     );
   }
 }
+
+/**
+ * sendMail kaster ved fejl — her fanges det altid, så en mislykket mail
+ * aldrig kan vælte den handling der udløste den (ordre, kundeoprettelse).
+ * Ét gentagelsesforsøg, derefter tydelig logning af nok info til at sende
+ * manuelt. Delt mellem lib/order-mail.ts og lib/welcome-mail.ts — lå
+ * oprindeligt kun i order-mail.ts, flyttet hertil da welcome-mail.ts fik
+ * brug for den samme logik (ingen duplikeret implementering).
+ */
+export async function sendMailWithRetry(message: MailMessage, context: string): Promise<void> {
+  try {
+    await sendMail(message);
+    return;
+  } catch (err) {
+    console.error(`[mail] ${context}: første forsøg fejlede, prøver igen`, err);
+  }
+
+  try {
+    await sendMail(message);
+  } catch (err) {
+    console.error(
+      `[mail] ${context}: andet forsøg fejlede også — send manuelt. to=${message.to.join(",")} subject="${message.subject}"`,
+      err,
+    );
+  }
+}

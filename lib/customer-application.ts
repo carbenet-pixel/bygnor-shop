@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { verifyCvr } from "@/lib/cvr";
 import { sendMail } from "@/lib/mail";
+import { sendWelcomeEmail } from "@/lib/welcome-mail";
 import { getDiscountGroups } from "@/lib/discount-groups";
 
 // ---------------------------------------------------------------------------
@@ -9,6 +10,14 @@ import { getDiscountGroups } from "@/lib/discount-groups";
 // oprydning ved fejl. Ingen politik om HVILKE værdier der sættes eller
 // hvorvidt der notificeres — det afgøres af de to flows nedenfor.
 // ---------------------------------------------------------------------------
+
+// IKKE bekræftet mod Supabase-projektets faktiske konfigurerede invite-
+// link-udløb (Dashboard → Authentication → Email-indstillinger) — ingen
+// Management API-adgang i dette miljø til at læse den værdi programmatisk.
+// 24 er den værdi mailteksten hidtil har antaget; ret dette tal (og kun
+// dette tal, teksten i lib/welcome-mail.ts bruger den automatisk) hvis den
+// faktiske indstilling viser sig at være en anden.
+const INVITE_LINK_EXPIRY_HOURS = 24;
 
 type CustomerAccountDetails = {
   companyName: string;
@@ -69,34 +78,37 @@ async function createCustomerAccount(
     return { success: false, error: "server_error" };
   }
 
-  // 2. Opret auth-brugeren og send invite-mailen. Peger tilbage på den
-  // eksisterende reset-password-side, som allerede kan veksle koden til en
-  // session og lade brugeren sætte sit første kodeord.
-  const { data: inviteData, error: inviteError } =
-    await supabaseAdmin.auth.admin.inviteUserByEmail(details.email, {
-      redirectTo: "https://bygnor-shop.vercel.app/login/reset-password",
-    });
+  // 2. Opret auth-brugeren OG generér invite-linket, men lad IKKE Supabase
+  // sende sin egen bare-bones invite-mail automatisk (det gjorde
+  // inviteUserByEmail) — generateLink() opretter brugeren og returnerer
+  // linket uden at sende noget, så vi selv kan sende ÉN kombineret
+  // velkomst-/invite-mail via Postmark (lib/welcome-mail.ts) i stedet for
+  // to separate mails. Peger tilbage på den eksisterende reset-password-
+  // side, som allerede kan veksle koden til en session og lade brugeren
+  // sætte sit første kodeord (type: 'invite', ikke 'recovery' — dette er
+  // et FØRSTE kodeord for en ny bruger, ikke en nulstilling af et
+  // eksisterende).
+  const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+    type: "invite",
+    email: details.email,
+    options: { redirectTo: "https://bygnor-shop.vercel.app/login/reset-password" },
+  });
 
-  if (inviteError || !inviteData.user) {
-    if (inviteError?.code === "email_exists") {
+  if (linkError || !linkData.user || !linkData.properties?.action_link) {
+    if (linkError?.code === "email_exists") {
       return { success: false, error: "email_taken" };
     }
-    if (
-      inviteError?.code === "over_email_send_rate_limit" ||
-      inviteError?.code === "over_request_rate_limit"
-    ) {
-      // Supabase's egen (meget lave) standard-mailkvote, ikke en fejl i
-      // selve oprettelsen — reelt fix er en konfigureret SMTP-udbyder.
+    if (linkError?.code === "over_request_rate_limit") {
       return { success: false, error: "rate_limited" };
     }
     console.error(
-      "[createCustomerAccount] inviteUserByEmail failed",
-      inviteError,
+      "[createCustomerAccount] generateLink(invite) failed",
+      linkError,
     );
     return { success: false, error: "server_error" };
   }
 
-  const userId = inviteData.user.id;
+  const userId = linkData.user.id;
 
   // 3. Udfyld profilen og adressen. Trigger'en fra 0001 har allerede oprettet
   // en bar profiles-række for userId, så dette er et update, ikke et insert.
@@ -144,8 +156,11 @@ async function createCustomerAccount(
   } catch (err) {
     // Oprydning: slet auth-brugeren igen. profiles/delivery_addresses har
     // "on delete cascade" til auth.users, så dette rydder alt op i ét hug.
-    // Invite-mailen er allerede sendt og kan ikke trækkes tilbage — klikker
-    // brugeren på linket nu, fejler det bare, da brugeren ikke længere findes.
+    // Ingen mail er sendt endnu på dette tidspunkt (generateLink sender
+    // intet selv, og vores egen velkomstmail sendes først NEDENFOR, efter
+    // profil/adresse er bekræftet sat op) — så der er intet at fortryde,
+    // modsat den gamle inviteUserByEmail-adfærd hvor mailen allerede var
+    // afsendt før dette tidspunkt kunne nås.
     console.error(
       "[createCustomerAccount] rolling back after partial signup failure",
       err,
@@ -161,6 +176,15 @@ async function createCustomerAccount(
     }
     return { success: false, error: "server_error" };
   }
+
+  // 4. ÉN kombineret velkomst-/invite-mail, sendt af os via Postmark —
+  // erstatter (ikke supplerer) Supabases tidligere automatiske invite-mail.
+  await sendWelcomeEmail(
+    finalCompanyName,
+    details.email,
+    linkData.properties.action_link,
+    INVITE_LINK_EXPIRY_HOURS,
+  );
 
   return { success: true, companyName: finalCompanyName };
 }

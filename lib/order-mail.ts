@@ -1,6 +1,6 @@
 import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { sendMail, type MailMessage } from "@/lib/mail";
+import { sendMailWithRetry } from "@/lib/mail";
 import { formatPrice, formatAddressLines, formatVatBreakdownLines } from "@/lib/format";
 
 /**
@@ -197,29 +197,6 @@ function formatDeliveryAddress(data: OrderMailData): string {
     city: data.deliveryCity,
     country: data.deliveryCountry,
   }).join("\n");
-}
-
-/**
- * sendMail kaster ved fejl — her fanges det altid, så en mislykket mail
- * aldrig kan vælte selve ordre-/betalingsflowet. Ét gentagelsesforsøg,
- * derefter tydelig logning af nok info til at sende manuelt.
- */
-async function sendMailWithRetry(message: MailMessage, context: string): Promise<void> {
-  try {
-    await sendMail(message);
-    return;
-  } catch (err) {
-    console.error(`[order-mail] ${context}: første forsøg fejlede, prøver igen`, err);
-  }
-
-  try {
-    await sendMail(message);
-  } catch (err) {
-    console.error(
-      `[order-mail] ${context}: andet forsøg fejlede også — send manuelt. to=${message.to.join(",")} subject="${message.subject}"`,
-      err,
-    );
-  }
 }
 
 /**
