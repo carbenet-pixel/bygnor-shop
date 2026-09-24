@@ -2,6 +2,7 @@ import "server-only";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { sendMailWithRetry } from "@/lib/mail";
 import { formatPrice, formatAddressLines, formatVatBreakdownLines } from "@/lib/format";
+import { getSiteUrl } from "@/lib/site-url";
 
 /**
  * Modtager for fakturaordrer — konfigureres via miljøvariabel, så den kan
@@ -314,7 +315,7 @@ Ordrereference: ${orderReference ?? "ukendt"}
 Hvad matchede ikke: ${reason}
 
 Se hele det modtagne callback (og ordren) her:
-https://bygnor-shop.vercel.app/admin/orders/${orderId}
+${getSiteUrl()}/admin/orders/${orderId}
 `;
 
   await sendMailWithRetry(

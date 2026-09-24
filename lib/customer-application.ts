@@ -4,6 +4,7 @@ import { verifyCvr } from "@/lib/cvr";
 import { sendMail } from "@/lib/mail";
 import { sendWelcomeEmail } from "@/lib/welcome-mail";
 import { getDiscountGroups } from "@/lib/discount-groups";
+import { getSiteUrl } from "@/lib/site-url";
 
 // ---------------------------------------------------------------------------
 // Delt kerne — CVR-check, invite, profiles-update, delivery_addresses-insert,
@@ -91,7 +92,7 @@ async function createCustomerAccount(
   const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
     type: "invite",
     email: details.email,
-    options: { redirectTo: "https://bygnor-shop.vercel.app/login/reset-password" },
+    options: { redirectTo: `${getSiteUrl()}/login/reset-password` },
   });
 
   if (linkError || !linkData.user || !linkData.properties?.action_link) {

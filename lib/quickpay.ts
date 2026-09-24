@@ -1,11 +1,11 @@
 import "server-only";
 import crypto from "node:crypto";
+import { getSiteUrl } from "@/lib/site-url";
 
 // Bekræftet mod https://learn.quickpay.net/tech-talk/api/ og
 // https://learn.quickpay.net/tech-talk/payments/link/.
 const API_BASE = "https://api.quickpay.net";
 const API_VERSION = "v10";
-const SITE_URL = "https://bygnor-shop.vercel.app";
 
 // QUICKPAY_AGREEMENT_ID (978962) er kun til reference/dokumentation — selve
 // Payment Window API-nøglen er allerede knyttet til den ene aftale, så
@@ -77,13 +77,14 @@ export async function createPaymentAndLink(
   // (omnipay-quickpay's LinkRequest). De forkerte navne blev tidligere
   // stille ignoreret af Quickpay — ingen redirect, intet callback, og
   // kortet blev aldrig auto-trukket.
+  const siteUrl = getSiteUrl();
   const link = await quickpayRequest<QuickpayLink>(`/payments/${payment.id}/link`, {
     method: "PUT",
     body: JSON.stringify({
       amount: amountInOre,
-      continue_url: `${SITE_URL}/shop/checkout/kvittering?order=${orderReference}`,
-      cancel_url: `${SITE_URL}/shop/checkout/annulleret?order=${orderReference}`,
-      callback_url: `${SITE_URL}/api/quickpay/callback`,
+      continue_url: `${siteUrl}/shop/checkout/kvittering?order=${orderReference}`,
+      cancel_url: `${siteUrl}/shop/checkout/annulleret?order=${orderReference}`,
+      callback_url: `${siteUrl}/api/quickpay/callback`,
       auto_capture: true,
     }),
   });

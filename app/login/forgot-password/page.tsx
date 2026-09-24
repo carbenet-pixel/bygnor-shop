@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { getSiteUrl } from "@/lib/site-url";
 
 async function sendResetLink(formData: FormData) {
   "use server";
@@ -9,7 +10,7 @@ async function sendResetLink(formData: FormData) {
 
   const supabase = await createClient();
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
-    redirectTo: "https://bygnor-shop.vercel.app/login/reset-password",
+    redirectTo: `${getSiteUrl()}/login/reset-password`,
   });
 
   if (error) {
