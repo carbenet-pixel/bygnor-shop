@@ -2,6 +2,42 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { getUserRole, getAccountStatus } from "@/lib/supabase/get-user-role";
 
+/**
+ * Audit-fund #4, rettet igen efter det forsøg der brugte en bred RLS-
+ * restrictive policy i stedet (droppet igen efter produktionsudfald, se
+ * migration 0036 — nu fjernet). AAL2 håndhæves i stedet HER, ét sted, på
+ * nøjagtig samme måde lib/admin-guard.ts's requireRole() allerede gør det
+ * (getAuthenticatorAssuranceLevel(), ikke en RLS-policy) — IKKE på
+ * databaselaget, hvor et enkelt overset session-bundet opslag et hvilket
+ * som helst sted i kodebasen kunne (og gjorde) lukke hele siden ned.
+ *
+ * Kaldes KUN fra /shop- og /admin-blokkene, ALDRIG for login/2FA-
+ * ruterne selv — de er slet ikke dækket af proxy.ts's matcher
+ * ("/", "/shop", "/shop/:path*", "/admin", "/admin/:path*"), så
+ * /login, /login/verify, /login/setup-2fa og /login/forgot-password /
+ * /login/reset-password rammes aldrig af denne middleware overhovedet,
+ * uanset hvad der tilføjes her — bekræftet ved læsning af matcher'en,
+ * ikke antaget.
+ *
+ * nextLevel skelner "har en faktor at bekræfte" (send til /login/verify)
+ * fra "ingen faktor tilmeldt endnu" (send til /login/setup-2fa) — samme
+ * skel login()'s egen listFactors()-baserede redirect allerede laver,
+ * blot udledt af sessionens JWT i stedet for et nyt Auth-kald.
+ */
+async function requireAal2(
+  supabase: ReturnType<typeof createServerClient>,
+  request: NextRequest,
+): Promise<NextResponse | null> {
+  const { data: aalData, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+
+  if (error || !aalData || aalData.currentLevel === "aal2") {
+    return null;
+  }
+
+  const target = aalData.nextLevel === "aal2" ? "/login/verify" : "/login/setup-2fa";
+  return NextResponse.redirect(new URL(target, request.url));
+}
+
 export async function proxy(request: NextRequest) {
   let response = NextResponse.next({ request });
 
@@ -73,6 +109,11 @@ export async function proxy(request: NextRequest) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
 
+    const aal2Redirect = await requireAal2(supabase, request);
+    if (aal2Redirect) {
+      return aal2Redirect;
+    }
+
     const status = await getAccountStatus(user.id);
 
     // En auth.users-række uden tilhørende profiles-række (fx trigger-fejl,
@@ -93,6 +134,11 @@ export async function proxy(request: NextRequest) {
   if (pathname.startsWith("/admin")) {
     if (!user) {
       return NextResponse.redirect(new URL("/login", request.url));
+    }
+
+    const aal2Redirect = await requireAal2(supabase, request);
+    if (aal2Redirect) {
+      return aal2Redirect;
     }
 
     const role = await getUserRole(user.id);
