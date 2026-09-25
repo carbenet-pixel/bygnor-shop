@@ -16,12 +16,12 @@ const headingClass =
 // link (samme mønster som "Se hele kataloget" på /shop og "Tilbage til
 // login" på /login) — genbrugt her i stedet for at opfinde en ny stil.
 const inlineLinkClass =
-  "text-slate-500 underline underline-offset-2 hover:text-[#185FA5]";
+  "text-slate-500 underline underline-offset-2 hover:text-bygnor-blue";
 
 // De juridiske links skal fremstå som links i sig selv, ikke kun ved
 // hover (fund fra UX-gennemgangen) — bruger derfor sitets link-farve som
 // hvilefarve, med underline som hover-tilstand.
-const legalLinkClass = "text-[#185FA5] hover:underline";
+const legalLinkClass = "text-bygnor-blue hover:underline";
 
 /**
  * Vises på både /shop og /admin (samme footer, ingen forenklet
@@ -43,7 +43,7 @@ export function Footer() {
             <p>CVR 45822370</p>
             <p>
               Tlf. 30 14 00 00 ·{" "}
-              <a href="mailto:kontakt@bygnor.com" className="hover:text-[#185FA5]">
+              <a href="mailto:kontakt@bygnor.com" className="hover:text-bygnor-blue">
                 kontakt@bygnor.com
               </a>
             </p>

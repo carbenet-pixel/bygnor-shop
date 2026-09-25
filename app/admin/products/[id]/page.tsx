@@ -12,7 +12,7 @@ export const dynamic = "force-dynamic";
 
 const labelClass = "mb-1 block text-sm font-medium text-slate-700";
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 export default async function ProductDetailPage({
   params,
@@ -38,12 +38,12 @@ export default async function ProductDetailPage({
     <div>
       <Link
         href="/admin/products"
-        className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+        className="mb-4 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
       >
         ← Tilbage til produkter
       </Link>
 
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">
+      <h1 className="mb-1 text-xl font-semibold text-foreground">
         {displayName(product)}
       </h1>
       <p className="mb-6 text-sm text-slate-500">Varenr. {product.sku}</p>
@@ -240,7 +240,7 @@ export default async function ProductDetailPage({
           formId={formId}
           action={updateProductAction}
           label="Gem ændringer"
-          buttonClassName="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60"
+          buttonClassName="rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60"
         />
       </div>
     </div>

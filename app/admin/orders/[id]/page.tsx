@@ -16,7 +16,7 @@ export const dynamic = "force-dynamic";
 const cellClass = "px-3 py-2 align-middle";
 const labelClass = "mb-1 block text-sm font-medium text-slate-700";
 const inputClass =
-  "rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 const PAYMENT_METHOD_LABELS: Record<string, string> = {
   kort: "Kort",
@@ -53,12 +53,12 @@ export default async function OrderDetailPage({
     <div>
       <Link
         href="/admin/orders"
-        className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+        className="mb-4 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
       >
         ← Tilbage til ordrer
       </Link>
 
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">
+      <h1 className="mb-1 text-xl font-semibold text-foreground">
         {order.orderReference ?? order.id}
       </h1>
       <p className="mb-6 text-sm text-slate-500">
@@ -67,20 +67,20 @@ export default async function OrderDetailPage({
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">Kunde</h2>
-          <p className="text-sm text-slate-900">{order.customerName ?? "Ukendt"}</p>
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Kunde</h2>
+          <p className="text-sm text-foreground">{order.customerName ?? "Ukendt"}</p>
           {order.cvrNumber && (
             <p className="text-sm text-slate-500">CVR {order.cvrNumber}</p>
           )}
           <p className="text-sm text-slate-500">{order.customerEmail ?? "—"}</p>
           <div className="mt-3">
             <span className={labelClass}>Eksternt kundenummer (KNI/Aarhus-fragt)</span>
-            <p className="text-sm text-slate-900">{order.externalCustomerNumber ?? ""}</p>
+            <p className="text-sm text-foreground">{order.externalCustomerNumber ?? ""}</p>
           </div>
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Leveringsadresse
           </h2>
           {formatAddressLines({
@@ -94,7 +94,7 @@ export default async function OrderDetailPage({
           }).map((line, index) => (
             <p
               key={index}
-              className={index === 0 ? "text-sm text-slate-900" : "text-sm text-slate-500"}
+              className={index === 0 ? "text-sm text-foreground" : "text-sm text-slate-500"}
             >
               {line}
             </p>
@@ -106,11 +106,11 @@ export default async function OrderDetailPage({
           er ikke et signal om ordren er håndteret. */}
       <div className="mt-6 grid gap-6 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">Betaling</h2>
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Betaling</h2>
           <div className="space-y-4">
             <div>
               <span className={labelClass}>Betalingsmetode</span>
-              <p className="text-sm text-slate-900">
+              <p className="text-sm text-foreground">
                 {PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}
               </p>
             </div>
@@ -140,7 +140,7 @@ export default async function OrderDetailPage({
                 </div>
               ) : (
                 <>
-                  <p className="text-sm text-slate-900">{order.status}</p>
+                  <p className="text-sm text-foreground">{order.status}</p>
                   <p className="mt-1 text-xs text-slate-400">
                     Styres udelukkende af Quickpay-callbacket — kan ikke
                     redigeres her.
@@ -152,7 +152,7 @@ export default async function OrderDetailPage({
             {!isInvoice && (
               <div>
                 <span className={labelClass}>Quickpay payment-id</span>
-                <p className="text-sm text-slate-900">
+                <p className="text-sm text-foreground">
                   {order.quickpayPaymentId ?? "—"}
                 </p>
               </div>
@@ -160,7 +160,7 @@ export default async function OrderDetailPage({
 
             <div>
               <span className={labelClass}>Rabat</span>
-              <p className="text-sm text-slate-900">
+              <p className="text-sm text-foreground">
                 {order.discountLabel ?? `${order.discountPercent}%`}
               </p>
             </div>
@@ -168,7 +168,7 @@ export default async function OrderDetailPage({
             {pricedItems.length > 0 && (
               <div>
                 <span className={labelClass}>Normalpris i alt</span>
-                <p className="text-sm text-slate-900">{formatPrice(normalTotal)}</p>
+                <p className="text-sm text-foreground">{formatPrice(normalTotal)}</p>
               </div>
             )}
 
@@ -192,8 +192,8 @@ export default async function OrderDetailPage({
                 <p
                   className={
                     line.emphasis
-                      ? "text-sm font-semibold text-slate-900"
-                      : "text-sm text-slate-900"
+                      ? "text-sm font-semibold text-foreground"
+                      : "text-sm text-foreground"
                   }
                 >
                   {line.value}
@@ -205,7 +205,7 @@ export default async function OrderDetailPage({
               <span className={labelClass}>Moms-detaljer</span>
               {order.vatRate != null ? (
                 <>
-                  <p className="text-sm text-slate-900">
+                  <p className="text-sm text-foreground">
                     {order.vatDestination}
                     {order.vatType ? ` · ${order.vatType}` : ""}
                   </p>
@@ -224,7 +224,7 @@ export default async function OrderDetailPage({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Ekspedition
           </h2>
           <p className="mb-4 text-xs text-slate-500">
@@ -287,7 +287,7 @@ export default async function OrderDetailPage({
                   : null;
               return (
                 <tr key={index}>
-                  <td className={`${cellClass} font-medium text-slate-900`}>
+                  <td className={`${cellClass} font-medium text-foreground`}>
                     {item.name}
                   </td>
                   <td className={`${cellClass} text-slate-500`}>{item.sku}</td>

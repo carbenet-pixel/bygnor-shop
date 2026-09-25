@@ -35,14 +35,14 @@ export default async function VerifyPage({
   const { error } = await searchParams;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-cream px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex justify-center">
           <Logo className="text-3xl" />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="mb-1 text-xl font-semibold text-slate-900">
+          <h1 className="mb-1 text-xl font-semibold text-foreground">
             To-faktor login
           </h1>
           <p className="mb-6 text-sm text-slate-500">
@@ -71,13 +71,13 @@ export default async function VerifyPage({
                 autoComplete="one-time-code"
                 maxLength={6}
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-center text-lg tracking-widest text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-center text-lg tracking-widest text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] focus:outline-none focus:ring-2 focus:ring-[#5A9D3C]/40"
+              className="w-full rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-bygnor-green/40"
             >
               Bekræft
             </button>

@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 const labelClass = "mb-1 block text-sm font-medium text-slate-700";
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 // datetime-local kræver "YYYY-MM-DDTHH:mm" uden tidszone. Serveren kører i
 // UTC (Vercel) — start-/slutdato tolkes derfor i UTC, både ved visning her
@@ -42,12 +42,12 @@ export default async function CampaignCodeDetailPage({
     <div>
       <Link
         href="/admin/campaign-codes"
-        className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+        className="mb-4 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
       >
         ← Tilbage til kampagnekoder
       </Link>
 
-      <h1 className="mb-6 text-xl font-semibold text-slate-900">
+      <h1 className="mb-6 text-xl font-semibold text-foreground">
         {campaignCode.code}
       </h1>
 
@@ -178,7 +178,7 @@ export default async function CampaignCodeDetailPage({
           formId={formId}
           action={updateCampaignCodeAction}
           label="Gem ændringer"
-          buttonClassName="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60"
+          buttonClassName="rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60"
         />
       </div>
     </div>

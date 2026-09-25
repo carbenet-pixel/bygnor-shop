@@ -12,14 +12,14 @@ export const metadata = {
 
 export default function PrivacyPage() {
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-12">
+    <div className="min-h-screen bg-cream px-4 py-12">
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 flex justify-center">
           <Logo className="text-2xl" />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="mb-4 text-xl font-semibold text-slate-900">
+          <h1 className="mb-4 text-xl font-semibold text-foreground">
             Privatlivspolitik
           </h1>
 
@@ -30,7 +30,7 @@ export default function PrivacyPage() {
             </p>
             <p>
               Kontakt:{" "}
-              <a href="mailto:kontakt@bygnor.com" className="hover:text-[#185FA5]">
+              <a href="mailto:kontakt@bygnor.com" className="hover:text-bygnor-blue">
                 kontakt@bygnor.com
               </a>
             </p>
@@ -39,7 +39,7 @@ export default function PrivacyPage() {
 
           <div className="space-y-6 text-sm text-slate-600">
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 1. Hvilke oplysninger indsamler vi
               </h2>
               <p>
@@ -62,7 +62,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 2. Formål og retsgrundlag
               </h2>
               <p>
@@ -77,7 +77,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 3. Hvem deler vi oplysninger med
               </h2>
               <p>Vi deler oplysninger med:</p>
@@ -97,7 +97,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">4. Opbevaring</h2>
+              <h2 className="mb-2 font-semibold text-foreground">4. Opbevaring</h2>
               <p>
                 Ordre- og faktureringsoplysninger opbevares i minimum 5 år i
                 overensstemmelse med bogføringsloven. Kontooplysninger
@@ -107,14 +107,14 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 5. Dine rettigheder
               </h2>
               <p>
                 Du har ret til indsigt i, berigtigelse af og sletning af
                 dine oplysninger, samt ret til at gøre indsigelse mod
                 behandlingen. Kontakt os på{" "}
-                <a href="mailto:kontakt@bygnor.com" className="hover:text-[#185FA5]">
+                <a href="mailto:kontakt@bygnor.com" className="hover:text-bygnor-blue">
                   kontakt@bygnor.com
                 </a>
                 . Du kan desuden klage til Datatilsynet (datatilsynet.dk).
@@ -122,7 +122,7 @@ export default function PrivacyPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">6. Cookies</h2>
+              <h2 className="mb-2 font-semibold text-foreground">6. Cookies</h2>
               <p>
                 Shoppen anvender kun tekniske, nødvendige cookies til login
                 og session-håndtering. Vi anvender ikke marketing- eller
@@ -133,7 +133,7 @@ export default function PrivacyPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-400">
-          <Link href="/shop/kurv" className="hover:text-[#185FA5]">
+          <Link href="/shop/kurv" className="hover:text-bygnor-blue">
             ← Tilbage til kurv
           </Link>
         </p>

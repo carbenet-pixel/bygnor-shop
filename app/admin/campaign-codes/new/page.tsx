@@ -8,7 +8,7 @@ export default async function NewCampaignCodePage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">
+      <h1 className="mb-1 text-xl font-semibold text-foreground">
         Opret kampagnekode
       </h1>
       <p className="mb-6 text-sm text-slate-500">

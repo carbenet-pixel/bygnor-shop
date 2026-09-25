@@ -6,14 +6,14 @@ export const dynamic = "force-dynamic";
 
 const labelClass = "mb-1 block text-xs font-medium text-slate-500";
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-2 py-1 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 export default async function VatRulesPage() {
   const rules = await listVatRules();
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">Momsregler</h1>
+      <h1 className="mb-1 text-xl font-semibold text-foreground">Momsregler</h1>
       <p className="mb-6 max-w-2xl text-sm text-slate-500">
         Kun synlig for superadmin. Satser og fakturatekster er endnu ikke
         bekræftet af revisor — værdierne markeret &quot;AFVENTER
@@ -33,7 +33,7 @@ export default async function VatRulesPage() {
             >
               <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">
+                  <p className="text-sm font-semibold text-foreground">
                     {rule.destinationCountry}
                   </p>
                   <p className="text-xs text-slate-400">{rule.vatType}</p>

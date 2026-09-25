@@ -24,7 +24,7 @@ export function CheckoutButton({ termsAccepted }: { termsAccepted: boolean }) {
       <button
         type="submit"
         disabled={isPending || !termsAccepted}
-        className="w-full rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60 sm:w-auto"
+        className="w-full rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60 sm:w-auto"
       >
         {isPending ? "Starter betaling…" : "Gå til betaling med kort"}
       </button>

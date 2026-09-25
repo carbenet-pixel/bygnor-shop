@@ -3,9 +3,9 @@
 import { useState } from "react";
 
 const selectClass =
-  "rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "rounded-md border border-slate-300 px-2 py-1 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 const smallInputClass =
-  "w-24 rounded-md border border-slate-300 px-2 py-1 text-xs text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-24 rounded-md border border-slate-300 px-2 py-1 text-xs text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 export function PaymentFields({
   formId,

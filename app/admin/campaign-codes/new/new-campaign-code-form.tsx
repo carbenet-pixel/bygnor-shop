@@ -8,7 +8,7 @@ import { DISCOUNT_TYPE_OPTIONS } from "@/lib/campaign-code-constants";
 const initialState: CampaignCodeFormState = { error: null, success: false };
 
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 const labelClass = "mb-1 block text-sm font-medium text-slate-700";
 
 export function NewCampaignCodeForm({ vendors }: { vendors: Vendor[] }) {
@@ -145,7 +145,7 @@ export function NewCampaignCodeForm({ vendors }: { vendors: Vendor[] }) {
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60"
+        className="rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60"
       >
         Opret kampagnekode
       </button>

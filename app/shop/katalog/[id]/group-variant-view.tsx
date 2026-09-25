@@ -9,7 +9,7 @@ import { ProductImage } from "../../product-image";
 import { AddToCartForm } from "./add-to-cart-form";
 
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 export function GroupVariantView({
   groupName,
@@ -36,7 +36,7 @@ export function GroupVariantView({
     <div className="mx-auto max-w-4xl px-4 py-8">
       <Link
         href={backHref}
-        className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+        className="mb-4 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
       >
         ← Tilbage til katalog
       </Link>
@@ -51,7 +51,7 @@ export function GroupVariantView({
 
         <div>
           <p className="text-xs text-slate-400">{categoryName}</p>
-          <h1 className="mt-1 mb-1 text-xl font-semibold text-slate-900">
+          <h1 className="mt-1 mb-1 text-xl font-semibold text-foreground">
             {groupName}
           </h1>
           {selected.catalogPage != null && (
@@ -108,7 +108,7 @@ export function GroupVariantView({
               {salesEmail ? (
                 <a
                   href={buildQuoteRequestMailto(salesEmail, selected.sku, displayName(selected))}
-                  className="rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+                  className="rounded-md bg-bygnor-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
                 >
                   Kontakt os for tilbud
                 </a>
@@ -125,7 +125,7 @@ export function GroupVariantView({
                   className={
                     selected.basePrice == null
                       ? "text-sm text-slate-400 italic"
-                      : "text-lg font-semibold text-slate-900"
+                      : "text-lg font-semibold text-foreground"
                   }
                 >
                   {formatPrice(selected.basePrice)}

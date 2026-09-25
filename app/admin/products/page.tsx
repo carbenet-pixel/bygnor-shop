@@ -14,7 +14,7 @@ export default async function AdminProductsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="mb-1 text-xl font-semibold text-slate-900">
+          <h1 className="mb-1 text-xl font-semibold text-foreground">
             Produkter
           </h1>
           <p className="text-sm text-slate-500">
@@ -23,7 +23,7 @@ export default async function AdminProductsPage() {
         </div>
         <Link
           href="/admin/products/new"
-          className="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632]"
+          className="rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
         >
           Opret produkt
         </Link>
@@ -63,10 +63,10 @@ export default async function AdminProductsPage() {
                   <td className={`${cellClass} text-slate-500`}>
                     {product.vendorName}
                   </td>
-                  <td className={`${cellClass} font-medium text-slate-900`}>
+                  <td className={`${cellClass} font-medium text-foreground`}>
                     <Link
                       href={`/admin/products/${product.id}`}
-                      className="hover:text-[#185FA5] hover:underline"
+                      className="hover:text-bygnor-blue hover:underline"
                     >
                       {displayName(product)}
                     </Link>
@@ -93,7 +93,7 @@ export default async function AdminProductsPage() {
                   <td className={cellClass}>
                     <Link
                       href={`/admin/products/${product.id}`}
-                      className="text-xs font-medium text-[#185FA5] hover:underline"
+                      className="text-xs font-medium text-bygnor-blue hover:underline"
                     >
                       Rediger
                     </Link>

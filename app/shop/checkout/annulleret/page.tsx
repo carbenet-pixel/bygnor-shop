@@ -48,7 +48,7 @@ export default async function CancelledCheckoutPage({
 
   return (
     <div className="mx-auto max-w-2xl px-4 py-16 text-center">
-      <h1 className="mb-2 text-xl font-semibold text-slate-900">
+      <h1 className="mb-2 text-xl font-semibold text-foreground">
         Betalingen blev annulleret
       </h1>
       <p className="mb-6 text-sm text-slate-500">
@@ -56,7 +56,7 @@ export default async function CancelledCheckoutPage({
       </p>
       <Link
         href="/shop/kurv"
-        className="inline-block rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+        className="inline-block rounded-md bg-bygnor-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
       >
         Tilbage til kurven
       </Link>

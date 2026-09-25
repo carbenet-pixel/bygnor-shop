@@ -20,12 +20,12 @@ export function AddToCartForm({ productId }: { productId: string }) {
         min={1}
         defaultValue={1}
         aria-label="Antal"
-        className="w-16 rounded-md border border-slate-300 px-2 py-1.5 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+        className="w-16 rounded-md border border-slate-300 px-2 py-1.5 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
       />
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-[#5A9D3C] px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60"
+        className="rounded-md bg-bygnor-green px-4 py-1.5 text-sm font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60"
       >
         Læg i kurv
       </button>

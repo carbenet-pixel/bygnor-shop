@@ -26,39 +26,39 @@ export default async function KontoIndstillingerPage() {
       <div className="space-y-6 rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
         <div>
           <span className={labelClass}>Firma</span>
-          <p className="text-sm text-slate-900">{account.companyName ?? "—"}</p>
+          <p className="text-sm text-foreground">{account.companyName ?? "—"}</p>
         </div>
 
         <div>
           <span className={labelClass}>Email</span>
-          <p className="text-sm text-slate-900">{account.email ?? "—"}</p>
+          <p className="text-sm text-foreground">{account.email ?? "—"}</p>
         </div>
 
         <div>
           <span className={labelClass}>Rabat</span>
-          <p className="text-sm text-slate-900">{account.discount.label}</p>
+          <p className="text-sm text-foreground">{account.discount.label}</p>
         </div>
 
         <div>
           <span className={labelClass}>Eksternt kundenummer</span>
-          <p className="text-sm text-slate-900">
+          <p className="text-sm text-foreground">
             {account.externalCustomerNumber ?? "—"}
           </p>
         </div>
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-slate-900">Telefonnummer</h2>
+        <h2 className="mb-4 text-sm font-semibold text-foreground">Telefonnummer</h2>
         <UpdatePhoneForm initialPhone={account.phone} />
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-4 text-sm font-semibold text-slate-900">Kodeord</h2>
+        <h2 className="mb-4 text-sm font-semibold text-foreground">Kodeord</h2>
         <ChangePasswordForm />
       </div>
 
       <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-1 text-sm font-semibold text-slate-900">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">
           To-faktor login (2FA)
         </h2>
         <p className="mb-4 text-sm text-slate-500">

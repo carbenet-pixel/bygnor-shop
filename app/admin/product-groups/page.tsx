@@ -8,7 +8,7 @@ export const dynamic = "force-dynamic";
 
 const cellClass = "px-4 py-3 align-middle";
 const inputClass =
-  "rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "rounded-md border border-slate-300 px-2 py-1 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 export default async function ProductGroupsPage() {
   const [groups, categories] = await Promise.all([
@@ -27,14 +27,14 @@ export default async function ProductGroupsPage() {
     <div>
       <div className="mb-6 flex items-center justify-between">
         <div>
-          <h1 className="mb-1 text-xl font-semibold text-slate-900">
+          <h1 className="mb-1 text-xl font-semibold text-foreground">
             Produktgrupper
           </h1>
           <p className="text-sm text-slate-500">Kun synlig for superadmin.</p>
         </div>
         <Link
           href="/admin/product-groups/new"
-          className="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632]"
+          className="rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
         >
           Opret produktgruppe
         </Link>
@@ -49,7 +49,7 @@ export default async function ProductGroupsPage() {
 
           return (
             <section key={category.id} className="mb-8">
-              <h2 className="mb-3 text-sm font-semibold text-slate-900">
+              <h2 className="mb-3 text-sm font-semibold text-foreground">
                 {category.name}
               </h2>
               <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">

@@ -17,7 +17,7 @@ export default async function KontoOrdrerPage() {
         </p>
         <Link
           href="/shop/katalog"
-          className="text-sm font-medium text-[#185FA5] hover:underline"
+          className="text-sm font-medium text-bygnor-blue hover:underline"
         >
           Gå til kataloget →
         </Link>
@@ -44,7 +44,7 @@ export default async function KontoOrdrerPage() {
               <td className={cellClass}>
                 <Link
                   href={`/shop/ordrer/${order.id}`}
-                  className="font-medium text-slate-900 hover:text-[#185FA5] hover:underline"
+                  className="font-medium text-foreground hover:text-bygnor-blue hover:underline"
                 >
                   {order.orderReference ?? order.id}
                 </Link>
@@ -61,7 +61,7 @@ export default async function KontoOrdrerPage() {
               <td className={`${cellClass} text-slate-500`}>
                 {order.fulfillmentStatusLabel}
               </td>
-              <td className={`${cellClass} font-medium text-slate-900`}>
+              <td className={`${cellClass} font-medium text-foreground`}>
                 {formatPrice(order.totalAmount)}
               </td>
             </tr>

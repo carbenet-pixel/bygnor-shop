@@ -18,7 +18,7 @@ export function SaveButton({
   formId,
   action,
   label = "Gem",
-  buttonClassName = "rounded-md bg-[#5A9D3C] px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60",
+  buttonClassName = "rounded-md bg-bygnor-green px-3 py-1 text-xs font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60",
 }: {
   formId: string;
   action: (formData: FormData) => void | Promise<void>;

@@ -9,7 +9,7 @@ export default async function ShopPage() {
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">
+      <h1 className="mb-1 text-xl font-semibold text-foreground">
         Kategorier
       </h1>
       <p className="mb-6 text-sm text-slate-500">
@@ -36,12 +36,12 @@ export default async function ShopPage() {
             type="search"
             name="q"
             placeholder="Søg på navn eller varenummer…"
-            className="w-full rounded-xl border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm text-slate-900 shadow-sm outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+            className="w-full rounded-xl border border-slate-200 bg-white py-2 pr-3 pl-9 text-sm text-foreground shadow-sm outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
           />
         </div>
         <button
           type="submit"
-          className="shrink-0 rounded-xl bg-[#185FA5] px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:bg-[#144e88] hover:shadow-md"
+          className="shrink-0 rounded-xl bg-bygnor-blue px-5 py-2 text-sm font-semibold text-white shadow-sm transition-all hover:brightness-90 hover:shadow-md"
         >
           Søg
         </button>
@@ -67,7 +67,7 @@ export default async function ShopPage() {
                 className="aspect-square rounded-lg"
                 sizes="(max-width: 640px) 45vw, 220px"
               />
-              <p className="mt-3 text-center text-sm font-medium text-slate-900 group-hover:text-[#185FA5]">
+              <p className="mt-3 text-center text-sm font-medium text-foreground group-hover:text-bygnor-blue">
                 {category.name}
               </p>
             </Link>
@@ -78,7 +78,7 @@ export default async function ShopPage() {
       <div className="mt-8">
         <Link
           href="/shop/katalog"
-          className="text-sm text-slate-500 underline underline-offset-2 hover:text-[#185FA5]"
+          className="text-sm text-slate-500 underline underline-offset-2 hover:text-bygnor-blue"
         >
           Se hele kataloget →
         </Link>

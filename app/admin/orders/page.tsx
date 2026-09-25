@@ -10,7 +10,7 @@ export const dynamic = "force-dynamic";
 
 const cellClass = "px-4 py-3 align-middle";
 const inputClass =
-  "rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 const STATUS_OPTIONS = ["afventer", "afventer_betaling", "betalt", "betaling_fejlet", "annulleret"];
 
@@ -36,7 +36,7 @@ export default async function AdminOrdersPage({
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">Ordrer</h1>
+      <h1 className="mb-1 text-xl font-semibold text-foreground">Ordrer</h1>
       <p className="mb-6 text-sm text-slate-500">
         {orders.length} {orders.length === 1 ? "ordre" : "ordrer"} —{" "}
         {showAll
@@ -62,14 +62,14 @@ export default async function AdminOrdersPage({
           </select>
           <button
             type="submit"
-            className="rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+            className="rounded-md bg-bygnor-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
           >
             Filtrér
           </button>
           {(status || paymentMethod) && (
             <Link
               href={showAll ? "/admin/orders?all=1" : "/admin/orders"}
-              className="flex items-center text-sm text-slate-500 hover:text-[#185FA5]"
+              className="flex items-center text-sm text-slate-500 hover:text-bygnor-blue"
             >
               Nulstil filtre
             </Link>
@@ -78,7 +78,7 @@ export default async function AdminOrdersPage({
 
         <Link
           href={toggleHref}
-          className="text-sm font-medium text-[#185FA5] hover:underline"
+          className="text-sm font-medium text-bygnor-blue hover:underline"
         >
           {showAll ? "Vis kun ordrer der kræver handling" : "Vis alle ordrer →"}
         </Link>
@@ -112,7 +112,7 @@ export default async function AdminOrdersPage({
                   <td className={cellClass}>
                     <Link
                       href={`/admin/orders/${order.id}`}
-                      className="font-medium text-slate-900 hover:text-[#185FA5] hover:underline"
+                      className="font-medium text-foreground hover:text-bygnor-blue hover:underline"
                     >
                       {order.orderReference ?? order.id}
                     </Link>
@@ -143,7 +143,7 @@ export default async function AdminOrdersPage({
                         order.fulfillmentStatus}
                     </span>
                   </td>
-                  <td className={`${cellClass} font-medium text-slate-900`}>
+                  <td className={`${cellClass} font-medium text-foreground`}>
                     {formatPrice(order.totalAmount)}
                   </td>
                 </tr>

@@ -20,7 +20,7 @@ export const metadata = { title: "Kurv" };
 
 const cellClass = "px-4 py-3 align-middle";
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 export default async function CartPage({
   searchParams,
@@ -60,7 +60,7 @@ export default async function CartPage({
   if (cart.items.length === 0) {
     return (
       <div className="mx-auto max-w-3xl px-4 py-16 text-center">
-        <h1 className="mb-2 text-xl font-semibold text-slate-900">
+        <h1 className="mb-2 text-xl font-semibold text-foreground">
           Kurven er tom
         </h1>
         <p className="mb-6 text-sm text-slate-500">
@@ -68,7 +68,7 @@ export default async function CartPage({
         </p>
         <Link
           href="/shop/katalog"
-          className="inline-block rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+          className="inline-block rounded-md bg-bygnor-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
         >
           Gå til kataloget
         </Link>
@@ -136,7 +136,7 @@ export default async function CartPage({
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">Kurv</h1>
+      <h1 className="mb-1 text-xl font-semibold text-foreground">Kurv</h1>
       <p className="mb-6 text-sm text-slate-500">
         {cart.items.length} {cart.items.length === 1 ? "vare" : "varer"} i
         kurven
@@ -179,7 +179,7 @@ export default async function CartPage({
                   <td className={cellClass}>
                     <Link
                       href={`/shop/katalog/${item.productId}`}
-                      className="font-medium text-slate-900 hover:text-[#185FA5] hover:underline"
+                      className="font-medium text-foreground hover:text-bygnor-blue hover:underline"
                     >
                       {displayName(item)}
                     </Link>
@@ -196,7 +196,7 @@ export default async function CartPage({
                       min={1}
                       defaultValue={item.quantity}
                       aria-label="Antal"
-                      className="w-16 rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+                      className="w-16 rounded-md border border-slate-300 px-2 py-1 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
                     />
                   </td>
                   <td className={cellClass}>
@@ -220,7 +220,7 @@ export default async function CartPage({
                       </span>
                     )}
                   </td>
-                  <td className={`${cellClass} font-medium text-slate-900`}>
+                  <td className={`${cellClass} font-medium text-foreground`}>
                     {subtotal == null ? (
                       <span className="font-normal text-slate-400 italic">—</span>
                     ) : (
@@ -287,7 +287,7 @@ export default async function CartPage({
                 key={line.label}
                 className={
                   line.emphasis
-                    ? "text-lg font-semibold text-slate-900"
+                    ? "text-lg font-semibold text-foreground"
                     : "text-sm text-slate-500"
                 }
               >
@@ -298,7 +298,7 @@ export default async function CartPage({
         )}
 
         <div className="mt-4 w-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">Kampagnekode</h2>
+          <h2 className="mb-3 text-sm font-semibold text-foreground">Kampagnekode</h2>
           <form action="/shop/kurv" method="GET" className="flex gap-2">
             <input
               type="text"
@@ -309,7 +309,7 @@ export default async function CartPage({
             />
             <button
               type="submit"
-              className="shrink-0 rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+              className="shrink-0 rounded-md bg-bygnor-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
             >
               Anvend
             </button>

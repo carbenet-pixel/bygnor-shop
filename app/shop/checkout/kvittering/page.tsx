@@ -46,7 +46,7 @@ export default async function ReceiptPage({
     <div className="mx-auto max-w-2xl px-4 py-16 text-center">
       {order.status === "afventer" && (
         <>
-          <h1 className="mb-2 text-xl font-semibold text-slate-900">
+          <h1 className="mb-2 text-xl font-semibold text-foreground">
             Ordre modtaget
           </h1>
           <p className="mb-6 text-sm text-slate-500">
@@ -61,7 +61,7 @@ export default async function ReceiptPage({
 
       {order.status === "afventer_betaling" && (
         <>
-          <h1 className="mb-2 text-xl font-semibold text-slate-900">
+          <h1 className="mb-2 text-xl font-semibold text-foreground">
             Betaling behandles
           </h1>
           <p className="mb-6 text-sm text-slate-500">
@@ -70,7 +70,7 @@ export default async function ReceiptPage({
           </p>
           <Link
             href={`/shop/checkout/kvittering?order=${orderReference}`}
-            className="mb-6 inline-block text-sm font-medium text-[#185FA5] hover:underline"
+            className="mb-6 inline-block text-sm font-medium text-bygnor-blue hover:underline"
           >
             Opdater status
           </Link>
@@ -79,7 +79,7 @@ export default async function ReceiptPage({
 
       {order.status === "betalt" && (
         <>
-          <h1 className="mb-2 text-xl font-semibold text-slate-900">
+          <h1 className="mb-2 text-xl font-semibold text-foreground">
             Tak for din betaling
           </h1>
           <p className="mb-6 text-sm text-slate-500">
@@ -94,7 +94,7 @@ export default async function ReceiptPage({
 
       {order.status === "betaling_fejlet" && (
         <>
-          <h1 className="mb-2 text-xl font-semibold text-slate-900">
+          <h1 className="mb-2 text-xl font-semibold text-foreground">
             Betalingen mislykkedes
           </h1>
           <p className="mb-6 text-sm text-slate-500">
@@ -107,7 +107,7 @@ export default async function ReceiptPage({
       {showVatInfo && (
         <div className="mb-6 rounded-md border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-500">
           {vatBreakdownLines.map((line) => (
-            <p key={line.label} className={line.emphasis ? "font-semibold text-slate-900" : ""}>
+            <p key={line.label} className={line.emphasis ? "font-semibold text-foreground" : ""}>
               {line.label}: {line.value}
             </p>
           ))}
@@ -117,7 +117,7 @@ export default async function ReceiptPage({
       <div>
         <Link
           href="/shop/katalog"
-          className="inline-block rounded-md bg-[#185FA5] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#144e88]"
+          className="inline-block rounded-md bg-bygnor-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
         >
           Til kataloget
         </Link>

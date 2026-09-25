@@ -55,7 +55,7 @@ export function ResetPasswordForm({ code }: { code: string | null }) {
           minLength={6}
           value={password}
           onChange={(event) => setPassword(event.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
         />
         <p className="mt-1 text-xs text-slate-400">
           Mindst 6 tegn — brug gerne en blanding af bogstaver og tal for et
@@ -79,7 +79,7 @@ export function ResetPasswordForm({ code }: { code: string | null }) {
           minLength={6}
           value={confirmPassword}
           onChange={(event) => setConfirmPassword(event.target.value)}
-          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+          className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
         />
       </div>
 
@@ -100,7 +100,7 @@ export function ResetPasswordForm({ code }: { code: string | null }) {
             autoComplete="one-time-code"
             maxLength={6}
             required
-            className="w-full rounded-md border border-slate-300 px-3 py-2 text-center text-lg tracking-widest text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+            className="w-full rounded-md border border-slate-300 px-3 py-2 text-center text-lg tracking-widest text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
           />
         </div>
       )}
@@ -108,7 +108,7 @@ export function ResetPasswordForm({ code }: { code: string | null }) {
       <button
         type="submit"
         disabled={isPending}
-        className="w-full rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] focus:outline-none focus:ring-2 focus:ring-[#5A9D3C]/40 disabled:opacity-60"
+        className="w-full rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-bygnor-green/40 disabled:opacity-60"
       >
         {state.needsMfa ? "Bekræft og skift kodeord" : "Gem nyt kodeord"}
       </button>

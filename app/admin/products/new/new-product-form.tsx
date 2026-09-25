@@ -9,7 +9,7 @@ import { STOCK_STATUS_OPTIONS } from "@/lib/product-constants";
 const initialState: CreateProductState = { error: null, success: false, warning: null };
 
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 const labelClass = "mb-1 block text-sm font-medium text-slate-700";
 
 export function NewProductForm({
@@ -54,7 +54,7 @@ export function NewProductForm({
       )}
 
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-900">Grundlæggende</h2>
+        <h2 className="text-sm font-semibold text-foreground">Grundlæggende</h2>
 
         <div>
           <label htmlFor="sku" className={labelClass}>
@@ -123,7 +123,7 @@ export function NewProductForm({
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-900">
+        <h2 className="text-sm font-semibold text-foreground">
           Pris og lager
         </h2>
 
@@ -221,7 +221,7 @@ export function NewProductForm({
       </section>
 
       <section className="space-y-4">
-        <h2 className="text-sm font-semibold text-slate-900">
+        <h2 className="text-sm font-semibold text-foreground">
           Billede (valgfri)
         </h2>
         <div>
@@ -241,7 +241,7 @@ export function NewProductForm({
       <button
         type="submit"
         disabled={isPending}
-        className="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60"
+        className="rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60"
       >
         Opret produkt
       </button>

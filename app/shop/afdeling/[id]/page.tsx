@@ -29,12 +29,12 @@ export default async function CategorySubcategoriesPage({
     <div className="mx-auto max-w-5xl px-4 py-8">
       <Link
         href="/shop"
-        className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+        className="mb-4 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
       >
         ← Til shop
       </Link>
 
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">{category.name}</h1>
+      <h1 className="mb-1 text-xl font-semibold text-foreground">{category.name}</h1>
       <p className="mb-6 text-sm text-slate-500">Vælg en underkategori.</p>
 
       <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4">
@@ -50,7 +50,7 @@ export default async function CategorySubcategoriesPage({
               className="aspect-square rounded-lg"
               sizes="(max-width: 640px) 45vw, 220px"
             />
-            <p className="mt-3 text-center text-sm font-medium text-slate-900 group-hover:text-[#185FA5]">
+            <p className="mt-3 text-center text-sm font-medium text-foreground group-hover:text-bygnor-blue">
               {subcategory.name}
             </p>
           </Link>
@@ -60,7 +60,7 @@ export default async function CategorySubcategoriesPage({
       <div className="mt-8">
         <Link
           href={`/shop/katalog?avdeling=${id}`}
-          className="text-sm text-slate-500 underline underline-offset-2 hover:text-[#185FA5]"
+          className="text-sm text-slate-500 underline underline-offset-2 hover:text-bygnor-blue"
         >
           Se alle produkter i {category.name} →
         </Link>

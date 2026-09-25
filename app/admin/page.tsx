@@ -3,7 +3,7 @@ import Link from "next/link";
 export default function AdminPage() {
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">Admin</h1>
+      <h1 className="mb-1 text-xl font-semibold text-foreground">Admin</h1>
       <p className="mb-6 text-sm text-slate-500">
         Velkommen til Bygnors admin-panel.
       </p>
@@ -11,9 +11,9 @@ export default function AdminPage() {
       <div className="grid max-w-xl gap-4 sm:grid-cols-2">
         <Link
           href="/admin/customers/new"
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-[#185FA5]"
+          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-bygnor-blue"
         >
-          <h2 className="mb-1 text-sm font-semibold text-slate-900">
+          <h2 className="mb-1 text-sm font-semibold text-foreground">
             Opret kunde
           </h2>
           <p className="text-xs text-slate-500">
@@ -23,9 +23,9 @@ export default function AdminPage() {
 
         <Link
           href="/admin/customers"
-          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-[#185FA5]"
+          className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm transition-colors hover:border-bygnor-blue"
         >
-          <h2 className="mb-1 text-sm font-semibold text-slate-900">
+          <h2 className="mb-1 text-sm font-semibold text-foreground">
             Kunder
           </h2>
           <p className="text-xs text-slate-500">

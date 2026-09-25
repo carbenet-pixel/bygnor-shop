@@ -37,7 +37,7 @@ export default async function LoginPage({
   const { error, reset } = await searchParams;
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
+    <div className="flex min-h-screen items-center justify-center bg-cream px-4">
       <div className="w-full max-w-sm">
         <div className="mb-4 flex justify-center">
           <Logo className="text-3xl" />
@@ -49,7 +49,7 @@ export default async function LoginPage({
         </p>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="mb-1 text-xl font-semibold text-slate-900">
+          <h1 className="mb-1 text-xl font-semibold text-foreground">
             Log ind
           </h1>
           <p className="mb-6 text-sm text-slate-500">
@@ -86,7 +86,7 @@ export default async function LoginPage({
                 type="email"
                 autoComplete="email"
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
               />
             </div>
 
@@ -103,11 +103,11 @@ export default async function LoginPage({
                 type="password"
                 autoComplete="current-password"
                 required
-                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+                className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
               />
               <a
                 href="/login/forgot-password"
-                className="mt-1 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+                className="mt-1 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
               >
                 Glemt kodeord?
               </a>
@@ -115,7 +115,7 @@ export default async function LoginPage({
 
             <button
               type="submit"
-              className="w-full rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] focus:outline-none focus:ring-2 focus:ring-[#5A9D3C]/40"
+              className="w-full rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 focus:outline-none focus:ring-2 focus:ring-bygnor-green/40"
             >
               Log ind
             </button>
@@ -128,7 +128,7 @@ export default async function LoginPage({
             href="https://bygnor.vercel.app/bliv-kunde"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-slate-500 underline underline-offset-2 hover:text-[#185FA5]"
+            className="font-medium text-slate-500 underline underline-offset-2 hover:text-bygnor-blue"
           >
             Ansøg om adgang
           </a>

@@ -29,7 +29,7 @@ export function ProductImageUploadForm({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h3 className="mb-3 text-sm font-semibold text-slate-900">Billede</h3>
+      <h3 className="mb-3 text-sm font-semibold text-foreground">Billede</h3>
 
       <div className="mb-4 flex items-center gap-4">
         <ProductImage
@@ -67,7 +67,7 @@ export function ProductImageUploadForm({
         <button
           type="submit"
           disabled={isPending}
-          className="shrink-0 rounded-md bg-[#5A9D3C] px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60"
+          className="shrink-0 rounded-md bg-bygnor-green px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60"
         >
           Upload billede
         </button>

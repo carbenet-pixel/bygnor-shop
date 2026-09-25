@@ -4,7 +4,7 @@ import { useState } from "react";
 import { formatAddressLines } from "@/lib/format";
 
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 export type DefaultAddress = {
   contactName: string | null;
@@ -40,7 +40,7 @@ export function DeliveryAddressFields({
 
   return (
     <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-      <h2 className="mb-3 text-sm font-semibold text-slate-900">
+      <h2 className="mb-3 text-sm font-semibold text-foreground">
         Leveringsadresse
       </h2>
 

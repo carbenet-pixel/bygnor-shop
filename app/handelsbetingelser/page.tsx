@@ -10,14 +10,14 @@ export const metadata = {
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-12">
+    <div className="min-h-screen bg-cream px-4 py-12">
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 flex justify-center">
           <Logo className="text-2xl" />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
-          <h1 className="mb-4 text-xl font-semibold text-slate-900">
+          <h1 className="mb-4 text-xl font-semibold text-foreground">
             Handelsbetingelser
           </h1>
 
@@ -27,7 +27,7 @@ export default function TermsPage() {
             <p>Gersagervej 9, 2670 Greve</p>
             <p>
               E-mail:{" "}
-              <a href="mailto:kontakt@bygnor.com" className="hover:text-[#185FA5]">
+              <a href="mailto:kontakt@bygnor.com" className="hover:text-bygnor-blue">
                 kontakt@bygnor.com
               </a>
             </p>
@@ -36,7 +36,7 @@ export default function TermsPage() {
 
           <div className="space-y-6 text-sm text-slate-600">
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">1. Generelt</h2>
+              <h2 className="mb-2 font-semibold text-foreground">1. Generelt</h2>
               <p>
                 Disse handelsbetingelser gælder for alle køb foretaget på
                 shop.bygnor.com (&quot;Shoppen&quot;). Shoppen henvender sig
@@ -49,7 +49,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 2. Produkter og priser
               </h2>
               <p>
@@ -69,7 +69,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 3. Bestilling og ordrebekræftelse
               </h2>
               <p>
@@ -82,7 +82,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">4. Betaling</h2>
+              <h2 className="mb-2 font-semibold text-foreground">4. Betaling</h2>
               <p>
                 Betaling kan ske med betalingskort (Visa/Mastercard) via
                 vores betalingsleverandør Quickpay, eller på faktura for
@@ -97,7 +97,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">5. Levering</h2>
+              <h2 className="mb-2 font-semibold text-foreground">5. Levering</h2>
               <p>
                 Forventet leveringstid er 1-3 uger fra ordrebekræftelse,
                 afhængig af produktionstid og fragtrute til
@@ -110,7 +110,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 6. Fortrydelsesret
               </h2>
               <p>
@@ -122,13 +122,13 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 7. Reklamation
               </h2>
               <p>
                 Kunden skal ved modtagelsen undersøge varen for
                 transportskader og mangler og straks reklamere til Bygnor på{" "}
-                <a href="mailto:kontakt@bygnor.com" className="hover:text-[#185FA5]">
+                <a href="mailto:kontakt@bygnor.com" className="hover:text-bygnor-blue">
                   kontakt@bygnor.com
                 </a>
                 , hvis varen er mangelfuld eller beskadiget. Reklamationer
@@ -138,7 +138,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 8. Ansvarsbegrænsning
               </h2>
               <p>
@@ -150,13 +150,13 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 9. Persondata
               </h2>
               <p>
                 Behandling af personoplysninger sker i overensstemmelse med
                 vores{" "}
-                <Link href="/privatlivspolitik" className="underline hover:text-[#185FA5]">
+                <Link href="/privatlivspolitik" className="underline hover:text-bygnor-blue">
                   privatlivspolitik
                 </Link>
                 .
@@ -164,7 +164,7 @@ export default function TermsPage() {
             </section>
 
             <section>
-              <h2 className="mb-2 font-semibold text-slate-900">
+              <h2 className="mb-2 font-semibold text-foreground">
                 10. Lovvalg og værneting
               </h2>
               <p>
@@ -176,7 +176,7 @@ export default function TermsPage() {
         </div>
 
         <p className="mt-6 text-center text-xs text-slate-400">
-          <Link href="/shop/kurv" className="hover:text-[#185FA5]">
+          <Link href="/shop/kurv" className="hover:text-bygnor-blue">
             ← Tilbage til kurv
           </Link>
         </p>

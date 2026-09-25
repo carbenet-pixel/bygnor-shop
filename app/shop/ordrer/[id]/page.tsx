@@ -24,12 +24,12 @@ export default async function CustomerOrderDetailPage({
     <div className="mx-auto max-w-4xl px-4 py-8">
       <Link
         href="/shop/konto/ordrer"
-        className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+        className="mb-4 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
       >
         ← Tilbage til mine ordrer
       </Link>
 
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">
+      <h1 className="mb-1 text-xl font-semibold text-foreground">
         {order.orderReference ?? order.id}
       </h1>
       <p className="mb-6 text-sm text-slate-500">
@@ -38,7 +38,7 @@ export default async function CustomerOrderDetailPage({
 
       <div className="grid gap-6 md:grid-cols-2">
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Leveringsadresse
           </h2>
           {formatAddressLines({
@@ -52,7 +52,7 @@ export default async function CustomerOrderDetailPage({
           }).map((line, index) => (
             <p
               key={index}
-              className={index === 0 ? "text-sm text-slate-900" : "text-sm text-slate-500"}
+              className={index === 0 ? "text-sm text-foreground" : "text-sm text-slate-500"}
             >
               {line}
             </p>
@@ -60,23 +60,23 @@ export default async function CustomerOrderDetailPage({
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-slate-900">
+          <h2 className="mb-3 text-sm font-semibold text-foreground">
             Status
           </h2>
           <div className="space-y-4">
             <div>
               <span className={labelClass}>Betalingsmetode</span>
-              <p className="text-sm text-slate-900">
+              <p className="text-sm text-foreground">
                 {PAYMENT_METHOD_LABELS[order.paymentMethod] ?? order.paymentMethod}
               </p>
             </div>
             <div>
               <span className={labelClass}>Betalingsstatus</span>
-              <p className="text-sm text-slate-900">{order.paymentStatusLabel}</p>
+              <p className="text-sm text-foreground">{order.paymentStatusLabel}</p>
             </div>
             <div>
               <span className={labelClass}>Ekspeditionsstatus</span>
-              <p className="text-sm text-slate-900">{order.fulfillmentStatusLabel}</p>
+              <p className="text-sm text-foreground">{order.fulfillmentStatusLabel}</p>
             </div>
             {formatVatBreakdownLines({
               subtotalAmount: order.subtotalAmount,
@@ -89,8 +89,8 @@ export default async function CustomerOrderDetailPage({
                 <p
                   className={
                     line.emphasis
-                      ? "text-sm font-semibold text-slate-900"
-                      : "text-sm text-slate-900"
+                      ? "text-sm font-semibold text-foreground"
+                      : "text-sm text-foreground"
                   }
                 >
                   {line.value}
@@ -115,7 +115,7 @@ export default async function CustomerOrderDetailPage({
           <tbody className="divide-y divide-slate-100">
             {order.items.map((item, index) => (
               <tr key={index}>
-                <td className={`${cellClass} font-medium text-slate-900`}>
+                <td className={`${cellClass} font-medium text-foreground`}>
                   {item.name}
                 </td>
                 <td className={`${cellClass} text-slate-500`}>{item.sku}</td>

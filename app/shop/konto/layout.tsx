@@ -6,12 +6,12 @@ export default function KontoLayout({ children }: { children: React.ReactNode })
     <div className="mx-auto max-w-5xl px-4 py-8">
       <Link
         href="/shop/katalog"
-        className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+        className="mb-4 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
       >
         ← Tilbage til katalog
       </Link>
 
-      <h1 className="mb-6 text-xl font-semibold text-slate-900">Min konto</h1>
+      <h1 className="mb-6 text-xl font-semibold text-foreground">Min konto</h1>
 
       <KontoTabs />
 

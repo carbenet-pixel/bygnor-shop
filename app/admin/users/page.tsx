@@ -21,7 +21,7 @@ export default async function AdminUsersPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">Brugere</h1>
+      <h1 className="mb-1 text-xl font-semibold text-foreground">Brugere</h1>
       <p className="mb-6 text-sm text-slate-500">
         Interne brugere (admin/superadmin) — kun synlig for superadmin.{" "}
         {users.length} {users.length === 1 ? "bruger" : "brugere"}.
@@ -47,7 +47,7 @@ export default async function AdminUsersPage() {
                 const formId = `reset-mfa-${u.id}`;
                 return (
                   <tr key={u.id}>
-                    <td className={`${cellClass} font-medium text-slate-900`}>
+                    <td className={`${cellClass} font-medium text-foreground`}>
                       {u.fullName ?? "—"}
                     </td>
                     <td className={`${cellClass} text-slate-500`}>{u.email ?? "—"}</td>

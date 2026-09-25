@@ -30,7 +30,7 @@ export function CheckoutSection({ invoiceApproved }: { invoiceApproved: boolean 
           <Link
             href="/handelsbetingelser"
             target="_blank"
-            className="underline hover:text-[#185FA5]"
+            className="underline hover:text-bygnor-blue"
           >
             handelsbetingelser
           </Link>{" "}
@@ -38,7 +38,7 @@ export function CheckoutSection({ invoiceApproved }: { invoiceApproved: boolean 
           <Link
             href="/privatlivspolitik"
             target="_blank"
-            className="underline hover:text-[#185FA5]"
+            className="underline hover:text-bygnor-blue"
           >
             privatlivspolitik
           </Link>

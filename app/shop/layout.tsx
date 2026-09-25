@@ -38,7 +38,7 @@ export default async function ShopLayout({
       : null;
 
   return (
-    <div className="flex min-h-screen flex-col bg-slate-50">
+    <div className="flex min-h-screen flex-col bg-cream">
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <Link href="/shop">
@@ -48,11 +48,11 @@ export default async function ShopLayout({
           <div className="flex items-center gap-4 text-xs text-slate-400">
             {role === "kunde" ? (
               <span className="mr-2">
-                <span className="font-semibold text-slate-900">
+                <span className="font-semibold text-foreground">
                   {companyName ?? "—"}
                 </span>{" "}
                 ·{" "}
-                <Link href="/shop/konto" className="hover:text-[#185FA5]">
+                <Link href="/shop/konto" className="hover:text-bygnor-blue">
                   Min konto
                 </Link>
               </span>
@@ -62,18 +62,18 @@ export default async function ShopLayout({
                   Email: {user.email} · Rolle: {role ?? "ukendt"}
                 </span>
                 {isAdmin && (
-                  <Link href="/admin" className="font-medium hover:text-[#185FA5]">
+                  <Link href="/admin" className="font-medium hover:text-bygnor-blue">
                     Admin →
                   </Link>
                 )}
-                <Link href="/shop/konto" className="hover:text-[#185FA5]">
+                <Link href="/shop/konto" className="hover:text-bygnor-blue">
                   Min konto
                 </Link>
               </>
             )}
             <Link
               href="/shop/kurv"
-              className="relative flex items-center text-slate-500 hover:text-[#185FA5]"
+              className="relative flex items-center text-slate-500 hover:text-bygnor-blue"
               aria-label="Kurv"
             >
               <svg
@@ -91,13 +91,13 @@ export default async function ShopLayout({
                 />
               </svg>
               {cartItemCount > 0 && (
-                <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-[#5A9D3C] px-1 text-[10px] font-semibold text-white">
+                <span className="absolute -top-2 -right-2 flex h-4 min-w-4 items-center justify-center rounded-full bg-bygnor-green px-1 text-[10px] font-semibold text-white">
                   {cartItemCount}
                 </span>
               )}
             </Link>
             <form action={logout}>
-              <button type="submit" className="hover:text-[#185FA5]">
+              <button type="submit" className="hover:text-bygnor-blue">
                 Log ud
               </button>
             </form>

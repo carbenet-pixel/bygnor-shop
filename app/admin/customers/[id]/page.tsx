@@ -19,10 +19,10 @@ export const dynamic = "force-dynamic";
 
 const labelClass = "mb-1 block text-sm font-medium text-slate-700";
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 const cellClass = "px-3 py-2 align-middle";
 const cellInputClass =
-  "w-full min-w-[8rem] rounded-md border border-slate-300 px-2 py-1 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full min-w-[8rem] rounded-md border border-slate-300 px-2 py-1 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 export default async function CustomerDetailPage({
   params,
@@ -52,12 +52,12 @@ export default async function CustomerDetailPage({
     <div>
       <Link
         href="/admin/customers"
-        className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+        className="mb-4 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
       >
         ← Tilbage til kunder
       </Link>
 
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">
+      <h1 className="mb-1 text-xl font-semibold text-foreground">
         {customer.companyName ?? "Unavngivet kunde"}
       </h1>
       <p className="mb-6 text-sm text-slate-500">{customer.email ?? "—"}</p>
@@ -167,12 +167,12 @@ export default async function CustomerDetailPage({
           formId={formId}
           action={updateCustomerAction}
           label="Gem ændringer"
-          buttonClassName="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632] disabled:opacity-60"
+          buttonClassName="rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90 disabled:opacity-60"
         />
       </div>
 
       <div className="mt-6 max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h2 className="mb-1 text-sm font-semibold text-slate-900">
+        <h2 className="mb-1 text-sm font-semibold text-foreground">
           To-faktor login (2FA)
         </h2>
         <p className="mb-4 text-sm text-slate-500">
@@ -196,7 +196,7 @@ export default async function CustomerDetailPage({
         </ConfirmSubmitButton>
       </div>
 
-      <h2 className="mt-10 mb-1 text-lg font-semibold text-slate-900">
+      <h2 className="mt-10 mb-1 text-lg font-semibold text-foreground">
         Leveringsadresser
       </h2>
       <p className="mb-4 text-sm text-slate-500">
@@ -327,7 +327,7 @@ export default async function CustomerDetailPage({
       </button>
 
       <div className="max-w-xl rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-        <h3 className="mb-4 text-sm font-semibold text-slate-900">
+        <h3 className="mb-4 text-sm font-semibold text-foreground">
           Tilføj ny adresse
         </h3>
         <form id={newAddressFormId} action={createAddressAction} className="space-y-4">
@@ -404,7 +404,7 @@ export default async function CustomerDetailPage({
 
           <button
             type="submit"
-            className="rounded-md bg-[#5A9D3C] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#4d8632]"
+            className="rounded-md bg-bygnor-green px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
           >
             Tilføj adresse
           </button>

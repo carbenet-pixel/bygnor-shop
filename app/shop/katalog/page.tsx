@@ -27,12 +27,12 @@ export default async function CatalogPage({
     <div className="mx-auto max-w-6xl px-4 py-8">
       <Link
         href="/shop"
-        className="mb-4 inline-block text-xs text-slate-400 hover:text-[#185FA5]"
+        className="mb-4 inline-block text-xs text-slate-400 hover:text-bygnor-blue"
       >
         ← Til shop
       </Link>
 
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">
+      <h1 className="mb-1 text-xl font-semibold text-foreground">
         Produktkatalog
       </h1>
       <p className="mb-6 text-sm text-slate-500">

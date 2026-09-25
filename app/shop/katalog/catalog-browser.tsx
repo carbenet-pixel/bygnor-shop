@@ -8,7 +8,7 @@ import { formatPrice, displayName } from "@/lib/format";
 import { ProductImage } from "../product-image";
 
 const inputClass =
-  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20";
+  "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
 
 function GroupCard({
   group,
@@ -47,7 +47,7 @@ function GroupCard({
         className="aspect-square rounded-lg"
         sizes="(max-width: 640px) 45vw, (max-width: 1024px) 220px, 240px"
       />
-      <p className="mt-3 line-clamp-2 text-sm font-medium text-slate-900 group-hover:text-[#185FA5]">
+      <p className="mt-3 line-clamp-2 text-sm font-medium text-foreground group-hover:text-bygnor-blue">
         {group.name}
       </p>
       <p className="text-xs text-slate-400">
@@ -57,7 +57,7 @@ function GroupCard({
         className={
           minPrice == null
             ? "mt-1 text-sm text-slate-400 italic"
-            : "mt-1 text-sm font-semibold text-slate-900"
+            : "mt-1 text-sm font-semibold text-foreground"
         }
       >
         {minPrice != null ? (
@@ -218,7 +218,7 @@ export function CatalogBrowser({
       ) : (
         filtered.map((category) => (
           <section key={category.id} className="mb-10">
-            <h2 className="mb-4 text-lg font-semibold text-slate-900">
+            <h2 className="mb-4 text-lg font-semibold text-foreground">
               {category.name}
             </h2>
             <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">

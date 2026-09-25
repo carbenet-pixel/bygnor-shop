@@ -8,7 +8,7 @@ export default async function DiscountGroupsPage() {
 
   return (
     <div>
-      <h1 className="mb-1 text-xl font-semibold text-slate-900">
+      <h1 className="mb-1 text-xl font-semibold text-foreground">
         Rabatgrupper
       </h1>
       <p className="mb-6 text-sm text-slate-500">
@@ -25,7 +25,7 @@ export default async function DiscountGroupsPage() {
               className="flex items-center justify-between gap-4 rounded-xl border border-slate-200 bg-white p-4 shadow-sm"
             >
               <div>
-                <p className="text-sm font-semibold text-slate-900">
+                <p className="text-sm font-semibold text-foreground">
                   {group.name}
                 </p>
                 <p className="text-xs text-slate-400">{group.id}</p>
@@ -44,12 +44,12 @@ export default async function DiscountGroupsPage() {
                   max="100"
                   step="0.01"
                   defaultValue={group.discountPercent}
-                  className="w-20 rounded-md border border-slate-300 px-2 py-1 text-right text-sm text-slate-900 outline-none focus:border-[#185FA5] focus:ring-2 focus:ring-[#185FA5]/20"
+                  className="w-20 rounded-md border border-slate-300 px-2 py-1 text-right text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20"
                 />
                 <span className="text-sm text-slate-500">%</span>
                 <button
                   type="submit"
-                  className="rounded-md bg-[#5A9D3C] px-3 py-1 text-xs font-semibold text-white transition-colors hover:bg-[#4d8632]"
+                  className="rounded-md bg-bygnor-green px-3 py-1 text-xs font-semibold text-white transition-colors hover:brightness-90"
                 >
                   Gem
                 </button>
