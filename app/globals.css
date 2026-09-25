@@ -9,6 +9,10 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-cream: #f6f1e7;
+  /* Footer band only — hovedsitet has no separate footer background at
+     all, but the shop footer is a denser data block that needs its own
+     zone; this keeps that zone in the cream family instead of slate. */
+  --color-cream-dark: #ede7d9;
   --color-bygnor-blue: #065397;
   --color-bygnor-green: #65a849;
   --font-sans: var(--font-inter);

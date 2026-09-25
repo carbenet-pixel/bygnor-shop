@@ -31,7 +31,7 @@ const legalLinkClass = "text-bygnor-blue hover:underline";
  */
 export function Footer() {
   return (
-    <footer className="border-t border-slate-300 bg-slate-100">
+    <footer className="border-t border-foreground/15 bg-cream-dark">
       <div className="mx-auto max-w-6xl px-4 py-10">
         <div className="grid grid-cols-1 gap-8 text-xs text-slate-500 sm:grid-cols-2 lg:grid-cols-4">
           <div>
@@ -77,7 +77,7 @@ export function Footer() {
         {/* Diskret brand-forankring, ikke reklame — mindre og mere afdæmpet
             (opacity-50) end header-logoet, adskilt af en tynd streg.
             Copyright-linjen holdes i samme dæmpede tone som wordmarket. */}
-        <div className="mt-8 flex flex-col items-center gap-2 border-t border-slate-200 pt-6">
+        <div className="mt-8 flex flex-col items-center gap-2 border-t border-foreground/10 pt-6">
           <Logo className="text-lg opacity-50" />
           <FlagRow width={84} />
           <p className="text-xs text-slate-400">
