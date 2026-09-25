@@ -14,6 +14,7 @@ import { CARD_CHECKOUT_FORM_ID } from "./checkout-button";
 import { INVOICE_CHECKOUT_FORM_ID } from "./invoice-checkout-button";
 import { DeliveryAddressFields } from "./delivery-address-fields";
 import { CheckoutSection } from "./checkout-section";
+import { VatPreviewProvider, VatLines } from "./vat-preview-context";
 
 export const dynamic = "force-dynamic";
 export const metadata = { title: "Kurv" };
@@ -133,6 +134,16 @@ export default async function CartPage({
   // Koden er gyldig, men rammer ingen af leverandørerne i kurven lige nu —
   // ikke en fejl, bare ingen effekt (jf. kravet i prompten).
   const campaignHasNoEffect = campaignCode != null && linesWithCampaignDiscount === 0;
+
+  // Seedes til VatPreviewProvider som førstevisning (SSR, ingen JS-
+  // ventetid) — genberegnes derefter client-side når kunden rent faktisk
+  // ændrer leveringsland (se vat-preview-context.tsx).
+  const previewSubtotal = roundCurrency(discountedTotal);
+  const initialVatLines = formatVatBreakdownLines({
+    ...computeVatBreakdown(previewSubtotal, previewVatSnapshot),
+    vatRate: previewVatSnapshot?.vatRate ?? null,
+    countryKnown: previewVatSnapshot != null,
+  });
 
   return (
     <div className="mx-auto max-w-4xl px-4 py-8">
@@ -279,84 +290,73 @@ export default async function CartPage({
                 Kampagnerabat ({campaignCode?.code}): -{formatPrice(campaignDiscountTotal)}
               </p>
             )}
-            {formatVatBreakdownLines({
-              ...computeVatBreakdown(roundCurrency(discountedTotal), previewVatSnapshot),
-              vatRate: previewVatSnapshot?.vatRate ?? null,
-            }).map((line) => (
-              <p
-                key={line.label}
-                className={
-                  line.emphasis
-                    ? "text-lg font-semibold text-foreground"
-                    : "text-sm text-slate-500"
-                }
-              >
-                {line.label}: {line.value}
-              </p>
-            ))}
           </>
         )}
 
-        <div className="mt-4 w-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <h2 className="mb-3 text-sm font-semibold text-foreground">Kampagnekode</h2>
-          <form action="/shop/kurv" method="GET" className="flex gap-2">
-            <input
-              type="text"
-              name="campaign"
-              placeholder="Indtast kode"
-              defaultValue={campaign ?? ""}
-              className={inputClass}
+        <VatPreviewProvider subtotal={previewSubtotal} initialLines={initialVatLines}>
+          {pricedItems.length > 0 && <VatLines />}
+
+          <div className="mt-4 w-full rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+            <h2 className="mb-3 text-sm font-semibold text-foreground">Kampagnekode</h2>
+            <form action="/shop/kurv" method="GET" className="flex gap-2">
+              <input
+                type="text"
+                name="campaign"
+                placeholder="Indtast kode"
+                defaultValue={campaign ?? ""}
+                className={inputClass}
+              />
+              <button
+                type="submit"
+                className="shrink-0 rounded-md bg-bygnor-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
+              >
+                Anvend
+              </button>
+            </form>
+
+            {campaignError && (
+              <p className="mt-2 text-sm text-red-600">{campaignError}</p>
+            )}
+            {campaignCode && campaignHasNoEffect && (
+              <p className="mt-2 text-sm text-amber-600">
+                Koden {campaignCode.code} er gyldig, men gælder ikke nogen af varerne i din kurv
+                lige nu.
+              </p>
+            )}
+            {campaignCode && linesWithCampaignDiscount > 0 && (
+              <p className="mt-2 text-sm text-emerald-700">
+                Koden {campaignCode.code} gav rabat på {linesWithCampaignDiscount}{" "}
+                {linesWithCampaignDiscount === 1 ? "vare" : "varer"} i kurven
+                {linesWithCampaignDiscount < pricedItems.length
+                  ? " (gælder ikke resten, se rabat-kolonnen pr. linje)"
+                  : ""}
+                .
+              </p>
+            )}
+          </div>
+
+          <div className="mt-4 w-full">
+            <DeliveryAddressFields
+              companyName={companyName}
+              defaultAddress={defaultAddress}
+              targetFormIds={[CARD_CHECKOUT_FORM_ID, INVOICE_CHECKOUT_FORM_ID]}
             />
-            <button
-              type="submit"
-              className="shrink-0 rounded-md bg-bygnor-blue px-4 py-2 text-sm font-semibold text-white transition-colors hover:brightness-90"
-            >
-              Anvend
-            </button>
-          </form>
+          </div>
 
-          {campaignError && (
-            <p className="mt-2 text-sm text-red-600">{campaignError}</p>
-          )}
-          {campaignCode && campaignHasNoEffect && (
-            <p className="mt-2 text-sm text-amber-600">
-              Koden {campaignCode.code} er gyldig, men gælder ikke nogen af varerne i din kurv
-              lige nu.
-            </p>
-          )}
-          {campaignCode && linesWithCampaignDiscount > 0 && (
-            <p className="mt-2 text-sm text-emerald-700">
-              Koden {campaignCode.code} gav rabat på {linesWithCampaignDiscount}{" "}
-              {linesWithCampaignDiscount === 1 ? "vare" : "varer"} i kurven
-              {linesWithCampaignDiscount < pricedItems.length
-                ? " (gælder ikke resten, se rabat-kolonnen pr. linje)"
-                : ""}
-              .
-            </p>
-          )}
-        </div>
+          {[CARD_CHECKOUT_FORM_ID, INVOICE_CHECKOUT_FORM_ID].map((formId) => (
+            <input
+              key={formId}
+              type="hidden"
+              form={formId}
+              name="campaignCode"
+              value={campaignCode?.code ?? ""}
+            />
+          ))}
 
-        <div className="mt-4 w-full">
-          <DeliveryAddressFields
-            companyName={companyName}
-            defaultAddress={defaultAddress}
-            targetFormIds={[CARD_CHECKOUT_FORM_ID, INVOICE_CHECKOUT_FORM_ID]}
-          />
-        </div>
-
-        {[CARD_CHECKOUT_FORM_ID, INVOICE_CHECKOUT_FORM_ID].map((formId) => (
-          <input
-            key={formId}
-            type="hidden"
-            form={formId}
-            name="campaignCode"
-            value={campaignCode?.code ?? ""}
-          />
-        ))}
-
-        <div className="mt-4 w-full">
-          <CheckoutSection invoiceApproved={invoiceApproved} />
-        </div>
+          <div className="mt-4 w-full">
+            <CheckoutSection invoiceApproved={invoiceApproved} />
+          </div>
+        </VatPreviewProvider>
       </div>
     </div>
   );

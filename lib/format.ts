@@ -88,6 +88,12 @@ export type VatBreakdownInput = {
   vatAmount: number | null;
   totalAmount: number | null;
   vatRate: number | null;
+  // False ONLY when the destination country itself is unknown (kurv-
+  // forhåndsvisningen før en adresse er valgt) — distinkt fra vatRate
+  // være null af andre grunde. Default true, så de fire eksisterende
+  // kaldssteder (altid en placeret ordre med en afklaret adresse) er
+  // upåvirkede uden at skulle rettes.
+  countryKnown?: boolean;
 };
 
 export type VatBreakdownLine = { label: string; value: string; emphasis?: boolean };
@@ -102,22 +108,35 @@ export type VatBreakdownLine = { label: string; value: string; emphasis?: boolea
  * gennemsigtighed for GL/FO-ordrer, ikke kun DK.
  */
 export function formatVatBreakdownLines(input: VatBreakdownInput): VatBreakdownLine[] {
+  const countryKnown = input.countryKnown ?? true;
   const lines: VatBreakdownLine[] = [];
 
   if (input.subtotalAmount != null) {
     lines.push({ label: "Varer (ekskl. moms)", value: formatPrice(input.subtotalAmount) });
 
-    if (input.vatRate != null && input.vatAmount != null) {
+    if (countryKnown && input.vatRate != null && input.vatAmount != null) {
       lines.push({ label: `Moms (${input.vatRate}%)`, value: formatPrice(input.vatAmount) });
     } else {
       lines.push({ label: "Moms", value: "Kan ikke beregnes (ukendt leveringsland)" });
     }
   }
 
-  // Altid en Total-linje, også når intet kan beregnes endnu (formatPrice(null)
-  // giver selv "Pris oplyses snarest") — samme fallback som resten af UI'et
-  // bruger for uprissatte varer, ikke en tom/manglende linje.
-  lines.push({ label: "Total", value: formatPrice(input.totalAmount), emphasis: true });
+  // Ukendt land: computeVatBreakdown() falder selv tilbage til ex-moms-
+  // beløbet som totalAmount (bevidst, for andre formål — se dens egen
+  // kommentar) — men her ville det vises som om det VAR sluttotalen, uden
+  // moms lagt til. Vis i stedet en tydelig opfordring, ikke et tal der kan
+  // læses som endeligt. Samme "Pris oplyses snarest"-fallback som før,
+  // uændret, for det andet nul-tilfælde (ingen subtotal, fx price-on-
+  // request-varer).
+  if (input.subtotalAmount != null && !countryKnown) {
+    lines.push({
+      label: "Total",
+      value: "Angiv leveringsland for at se prisen inkl. moms",
+      emphasis: true,
+    });
+  } else {
+    lines.push({ label: "Total", value: formatPrice(input.totalAmount), emphasis: true });
+  }
 
   return lines;
 }

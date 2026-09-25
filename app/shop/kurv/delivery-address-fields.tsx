@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { formatAddressLines } from "@/lib/format";
+import { useVatPreview } from "./vat-preview-context";
 
 const inputClass =
   "w-full rounded-md border border-slate-300 px-3 py-2 text-sm text-foreground outline-none focus:border-bygnor-blue focus:ring-2 focus:ring-bygnor-blue/20";
@@ -30,6 +31,8 @@ export function DeliveryAddressFields({
   defaultAddress: DefaultAddress;
   targetFormIds: string[];
 }) {
+  const { setEffectiveCountry } = useVatPreview();
+
   const [useAlternative, setUseAlternative] = useState(false);
   const [recipientName, setRecipientName] = useState(defaultAddress?.contactName ?? "");
   const [addressLine1, setAddressLine1] = useState(defaultAddress?.streetAddress ?? "");
@@ -69,7 +72,12 @@ export function DeliveryAddressFields({
           type="checkbox"
           checked={useAlternative || !defaultAddress}
           disabled={!defaultAddress}
-          onChange={(e) => setUseAlternative(e.target.checked)}
+          onChange={(e) => {
+            setUseAlternative(e.target.checked);
+            // Skifter hvilket land der er det effektive — genberegn med
+            // det samme, ikke først når/hvis kunden også rører landefeltet.
+            setEffectiveCountry(e.target.checked ? country : (defaultAddress?.country ?? ""));
+          }}
           className="h-4 w-4"
         />
         Lever til en anden adresse denne gang
@@ -112,6 +120,7 @@ export function DeliveryAddressFields({
             placeholder="Land"
             value={country}
             onChange={(e) => setCountry(e.target.value)}
+            onBlur={(e) => setEffectiveCountry(e.target.value)}
           />
         </div>
       )}
