@@ -41,7 +41,7 @@ export default async function AdminLayout({
   return (
     <div className="flex min-h-screen flex-col bg-cream">
       <div className="flex flex-1">
-        <aside className="w-56 shrink-0 border-r border-slate-200 bg-white px-4 py-6">
+        <aside className="w-56 shrink-0 border-r border-foreground/10 bg-cream px-4 py-6">
           <div className="mb-8 flex justify-center">
             <Logo className="text-xl" />
           </div>
@@ -51,7 +51,7 @@ export default async function AdminLayout({
               <Link
                 key={item.href}
                 href={item.href}
-                className="block rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 hover:text-foreground"
+                className="block rounded-md px-3 py-2 text-sm font-medium text-slate-600 hover:bg-cream-dark hover:text-foreground"
               >
                 {item.label}
               </Link>
