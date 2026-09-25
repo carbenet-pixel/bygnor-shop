@@ -4,11 +4,16 @@ export type MailMessage = {
   to: string[];
   subject: string;
   body: string;
+  // Overstyrer DEFAULT_FROM_ADDRESS/uden Reply-To for denne ene besked —
+  // fx order-mail.ts's ordre-mails, uden at ændre standarden andre
+  // kaldssteder (welcome-mail.ts) fortsat bruger uændret.
+  from?: string;
+  replyTo?: string;
 };
 
 // Skal matche et domæne verificeret i Postmark. Bekræft denne værdi er
 // korrekt, før mailen går live.
-const FROM_ADDRESS = "noreply@bygnor.com";
+const DEFAULT_FROM_ADDRESS = "noreply@bygnor.com";
 
 /**
  * Sender via Postmarks Email API (https://postmarkapp.com/developer/api/email-api).
@@ -32,8 +37,9 @@ export async function sendMail(message: MailMessage): Promise<void> {
       "X-Postmark-Server-Token": token,
     },
     body: JSON.stringify({
-      From: FROM_ADDRESS,
+      From: message.from ?? DEFAULT_FROM_ADDRESS,
       To: message.to.join(", "),
+      ...(message.replyTo ? { ReplyTo: message.replyTo } : {}),
       Subject: message.subject,
       TextBody: message.body,
       MessageStream: "outbound",

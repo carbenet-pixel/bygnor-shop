@@ -4,6 +4,13 @@ import { sendMailWithRetry } from "@/lib/mail";
 import { formatPrice, formatAddressLines, formatVatBreakdownLines } from "@/lib/format";
 import { getSiteUrl } from "@/lib/site-url";
 
+// "Bygnor <ordre@bygnor.com>" i stedet for lib/mail.ts's delte
+// noreply@-standardadresse — ordre-relaterede mails bør ikke selv se
+// "svar ikke hertil"-agtige ud. Behøver ikke være en overvåget postkasse:
+// et kundesvar routes til kontakt@bygnor.com via Reply-To
+// (sendOrderConfirmation nedenfor), uafhængigt af hvad From viser.
+const ORDER_FROM_ADDRESS = "Bygnor <ordre@bygnor.com>";
+
 /**
  * Modtager for fakturaordrer — konfigureres via miljøvariabel, så den kan
  * ændres uden en ny deploy. Ingen fallback-værdi: mangler den, skal det
@@ -238,7 +245,10 @@ ${formatDeliveryAddress(data)}
 ${formatTotals(data, true)}
 `;
 
-  await sendMailWithRetry({ to: [salesEmail], subject, body }, `fakturanotifikation ordre=${orderId}`);
+  await sendMailWithRetry(
+    { to: [salesEmail], subject, body, from: ORDER_FROM_ADDRESS },
+    `fakturanotifikation ordre=${orderId}`,
+  );
 }
 
 /**
@@ -255,29 +265,70 @@ export async function sendOrderConfirmation(orderId: string): Promise<void> {
     return;
   }
 
-  const paymentStatusText =
-    data.paymentMethod === "kort"
-      ? "Betalt med kort"
-      : "Afventer fakturabehandling — vores salgsafdeling kontakter dig";
+  const isInvoice = data.paymentMethod === "faktura";
 
-  const subject = "Ordrebekræftelse — Bygnor";
+  // 14 dage matcher handelsbetingelsernes §4 (fakturaforfald) — hardkodet
+  // som resten af forretningsreglerne i systemet, ikke læst fra en
+  // konfigurerbar kilde (ingen findes for denne regel i dag).
+  const paymentStatusDa = isInvoice
+    ? "Afventer fakturabehandling — vores salgsafdeling kontakter dig.\nBetalingsfrist: 14 dage fra fakturadato."
+    : "Betalt med kort";
+  const paymentStatusEn = isInvoice
+    ? "Awaiting invoice processing — our sales team will contact you.\nPayment due: 14 days from the invoice date."
+    : "Paid by card";
 
-  const body = `Tak for din bestilling hos Bygnor.
+  const orderUrl = `${getSiteUrl()}/shop/ordrer/${orderId}`;
+
+  const subject = "Ordrebekræftelse — Bygnor / Order confirmation — Bygnor";
+
+  // Ordrelinjer/adresse/totaler vises kun ÉN gang, ikke duplikeret pr.
+  // sprog: formatItemsList/formatTotals har hardkodede danske labels
+  // ("stk", "Normalpris", "Moms" osv.) delt med ordrevisning/admin/
+  // kvittering, og der findes intet engelsk produktnavn i data-modellen
+  // (kun "da"/"sv", se formatItemsList) — at gengive den samme danske
+  // tekst under en engelsk overskrift ville se oversat ud uden at være
+  // det. Hilsen/status/link gentages derfor fuldt ud på begge sprog;
+  // selve datablokken er sprog-neutral nok (tal, adresse, varenumre) til
+  // at stå fælles under en bilingual sektionslabel.
+  const body = `Dansk
+
+Tak for din bestilling hos Bygnor.
 
 Ordrereference: ${data.orderReference ?? "ukendt"}
+Betalingsstatus: ${paymentStatusDa}
 
-Ordrelinjer:
+English
+
+Thank you for your order with Bygnor.
+
+Order reference: ${data.orderReference ?? "unknown"}
+Payment status: ${paymentStatusEn}
+
+—
+
+Ordrelinjer / Order lines:
 ${formatItemsList(data.items, "da")}
 
-Leveringsadresse:
+Leveringsadresse / Delivery address:
 ${formatDeliveryAddress(data)}
 
-Betalingsstatus: ${paymentStatusText}
 ${formatTotals(data, false)}
+
+Se din ordre her / View your order here:
+${orderUrl}
+
+Med venlig hilsen / Best regards,
+Bygnor
 `;
 
   await sendMailWithRetry(
-    { to: [data.customerEmail], subject, body },
+    {
+      to: [data.customerEmail],
+      subject,
+      body,
+      from: ORDER_FROM_ADDRESS,
+      replyTo: "kontakt@bygnor.com",
+    },
     `ordrebekræftelse ordre=${orderId}`,
   );
 }
