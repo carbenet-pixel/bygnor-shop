@@ -1,8 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 
+// title.absolute — se app/privatlivspolitik/page.tsx for hvorfor en
+// almindelig streng-titel her ville arve rod-layoutets template og blive
+// til "Handelsbetingelser — Bygnor – Bygnor Shop".
 export const metadata = {
-  title: "Handelsbetingelser — Bygnor",
+  title: { absolute: "Handelsbetingelser — Bygnor" },
 };
 
 export default function TermsPage() {

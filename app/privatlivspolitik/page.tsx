@@ -1,8 +1,13 @@
 import Image from "next/image";
 import Link from "next/link";
 
+// title.absolute, ikke en almindelig streng — rod-layoutets title.template
+// ("%s – Bygnor Shop") gælder ellers automatisk for enhver almindelig
+// streng-titel i en underside, hvilket her ville give det dobbelte
+// "Privatlivspolitik — Bygnor – Bygnor Shop". absolute er Next.js' egen
+// mekanisme til bevidst at fravælge template'et og vise nøjagtig denne tekst.
 export const metadata = {
-  title: "Privatlivspolitik — Bygnor",
+  title: { absolute: "Privatlivspolitik — Bygnor" },
 };
 
 export default function PrivacyPage() {

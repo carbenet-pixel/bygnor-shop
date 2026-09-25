@@ -16,6 +16,7 @@ import { DeliveryAddressFields } from "./delivery-address-fields";
 import { CheckoutSection } from "./checkout-section";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Kurv" };
 
 const cellClass = "px-4 py-3 align-middle";
 const inputClass =

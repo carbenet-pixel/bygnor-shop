@@ -13,7 +13,10 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Bygnor Shop",
+  title: {
+    default: "Bygnor Shop",
+    template: "%s – Bygnor Shop",
+  },
   description: "B2B-bestilling til Grønland og Nordatlanten",
   robots: {
     index: false,

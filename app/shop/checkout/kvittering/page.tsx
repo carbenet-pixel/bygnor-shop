@@ -4,6 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 import { formatPrice, formatVatBreakdownLines } from "@/lib/format";
 
 export const dynamic = "force-dynamic";
+export const metadata = { title: "Kvittering" };
 
 export default async function ReceiptPage({
   searchParams,

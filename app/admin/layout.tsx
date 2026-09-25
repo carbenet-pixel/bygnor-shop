@@ -5,6 +5,8 @@ import { getUserRole } from "@/lib/supabase/get-user-role";
 import { logout } from "@/lib/supabase/actions";
 import { Footer } from "@/components/footer";
 
+export const metadata = { title: "Admin" };
+
 const navItems = [
   { href: "/admin/orders", label: "Ordrer" },
   { href: "/admin/customers", label: "Kunder" },
