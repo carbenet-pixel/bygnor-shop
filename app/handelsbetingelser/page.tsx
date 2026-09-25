@@ -131,9 +131,14 @@ export default function TermsPage() {
                 <a href="mailto:kontakt@bygnor.com" className="hover:text-bygnor-blue">
                   kontakt@bygnor.com
                 </a>
-                , hvis varen er mangelfuld eller beskadiget. Reklamationer
-                håndteres af Bygnor. Købelovens almindelige regler om
-                mangler ved erhvervskøb finder i øvrigt anvendelse.
+                , hvis varen er mangelfuld eller beskadiget. Der er ingen
+                fortrydelsesret på erhvervskøb. Ønsker kunden alligevel at
+                returnere en vare, skal dette aftales med Bygnor forud for
+                returnering ved henvendelse til samme mailadresse — varer der
+                returneres uden forudgående aftale, kan blive afvist. Bygnor
+                oplyser en returadresse, når returnering er aftalt.
+                Reklamationer håndteres af Bygnor. Købelovens almindelige
+                regler om mangler ved erhvervskøb finder i øvrigt anvendelse.
               </p>
             </section>
 
