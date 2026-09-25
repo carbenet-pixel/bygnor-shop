@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { Logo } from "@/components/logo";
+import { FlagRow } from "@/components/flag-row";
 
 export const metadata = { title: "Log ind" };
 
@@ -43,10 +44,14 @@ export default async function LoginPage({
           <Logo className="text-3xl" />
         </div>
 
-        <p className="mb-8 text-center text-xs text-slate-400">
+        <p className="mb-3 text-center text-xs text-slate-400">
           Professionelt butiks- og restaurantinventar leveret til Grønland og
           Nordatlanten.
         </p>
+
+        <div className="mb-8 flex justify-center">
+          <FlagRow width={64} />
+        </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
           <h1 className="mb-1 text-xl font-semibold text-foreground">
