@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 /**
  * Leverandørliste — hold som en simpel liste af navne, så en ny leverandør
@@ -77,13 +77,7 @@ export function Footer() {
             (opacity-50) end header-logoet, adskilt af en tynd streg.
             Copyright-linjen holdes i samme dæmpede tone som wordmarket. */}
         <div className="mt-8 flex flex-col items-center gap-2 border-t border-slate-200 pt-6">
-          <Image
-            src="/images/bygnor-logo.png"
-            alt="Bygnor"
-            width={100}
-            height={19}
-            className="opacity-50"
-          />
+          <Logo className="text-lg opacity-50" />
           <p className="text-xs text-slate-400">
             © {new Date().getFullYear()} Bygnor ApS. Alle rettigheder forbeholdes.
           </p>

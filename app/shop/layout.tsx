@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/supabase/get-user-role";
@@ -42,13 +42,7 @@ export default async function ShopLayout({
       <header className="border-b border-slate-200 bg-white">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4">
           <Link href="/shop">
-            <Image
-              src="/images/bygnor-logo.png"
-              alt="Bygnor"
-              width={160}
-              height={30}
-              priority
-            />
+            <Logo className="text-2xl" />
           </Link>
 
           <div className="flex items-center gap-4 text-xs text-slate-400">

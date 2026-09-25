@@ -1,9 +1,9 @@
-import Image from "next/image";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { getUserRole } from "@/lib/supabase/get-user-role";
 import { logout } from "@/lib/supabase/actions";
 import { Footer } from "@/components/footer";
+import { Logo } from "@/components/logo";
 
 export const metadata = { title: "Admin" };
 
@@ -43,13 +43,7 @@ export default async function AdminLayout({
       <div className="flex flex-1">
         <aside className="w-56 shrink-0 border-r border-slate-200 bg-white px-4 py-6">
           <div className="mb-8 flex justify-center">
-            <Image
-              src="/images/bygnor-logo.png"
-              alt="Bygnor"
-              width={140}
-              height={27}
-              priority
-            />
+            <Logo className="text-xl" />
           </div>
 
           <nav className="space-y-1">

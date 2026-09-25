@@ -1,5 +1,5 @@
-import Image from "next/image";
 import Link from "next/link";
+import { Logo } from "@/components/logo";
 
 // title.absolute, ikke en almindelig streng — rod-layoutets title.template
 // ("%s – Bygnor Shop") gælder ellers automatisk for enhver almindelig
@@ -15,13 +15,7 @@ export default function PrivacyPage() {
     <div className="min-h-screen bg-slate-50 px-4 py-12">
       <div className="mx-auto max-w-2xl">
         <div className="mb-8 flex justify-center">
-          <Image
-            src="/images/bygnor-logo.png"
-            alt="Bygnor"
-            width={160}
-            height={30}
-            priority
-          />
+          <Logo className="text-2xl" />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">

@@ -1,6 +1,6 @@
-import Image from "next/image";
 import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { Logo } from "@/components/logo";
 
 async function verify(formData: FormData) {
   "use server";
@@ -38,13 +38,7 @@ export default async function VerifyPage({
     <div className="flex min-h-screen items-center justify-center bg-slate-50 px-4">
       <div className="w-full max-w-sm">
         <div className="mb-8 flex justify-center">
-          <Image
-            src="/images/bygnor-logo.png"
-            alt="Bygnor"
-            width={220}
-            height={42}
-            priority
-          />
+          <Logo className="text-3xl" />
         </div>
 
         <div className="rounded-xl border border-slate-200 bg-white p-8 shadow-sm">
