@@ -3,9 +3,14 @@ import { NextResponse, type NextRequest } from "next/server";
 import { getUserRole, getAccountStatus } from "@/lib/supabase/get-user-role";
 
 /**
- * Audit-fund #4, rettet igen efter det forsøg der brugte en bred RLS-
- * restrictive policy i stedet (droppet igen efter produktionsudfald, se
- * migration 0036 — nu fjernet). AAL2 håndhæves i stedet HER, ét sted, på
+ * Audit-fund #4. En tidligere version af dette forsvar brugte i stedet en
+ * bred RLS "as restrictive"-policy (migration 0036) — den forårsagede et
+ * produktionsudfald og blev efterfølgende slået fra direkte i databasen,
+ * uden om migrationskæden (0036-filen selv indeholder stadig kun de
+ * oprindelige CREATE POLICY-sætninger, ingen tilhørende DROP — filen alene
+ * giver derfor et misvisende billede af den faktiske database). Bekræftet
+ * via pg_policies mod produktionsdatabasen: disse AAL2-policies findes
+ * IKKE der i dag. MFA håndhæves derfor udelukkende HER, ét sted, på
  * nøjagtig samme måde lib/admin-guard.ts's requireRole() allerede gør det
  * (getAuthenticatorAssuranceLevel(), ikke en RLS-policy) — IKKE på
  * databaselaget, hvor et enkelt overset session-bundet opslag et hvilket
@@ -30,7 +35,14 @@ async function requireAal2(
 ): Promise<NextResponse | null> {
   const { data: aalData, error } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
 
-  if (error || !aalData || aalData.currentLevel === "aal2") {
+  // Fail-closed: MFA er det eneste håndhævelseslag i dag (se kommentaren
+  // ovenfor) — en fejl eller manglende svar her må aldrig stiltiende
+  // lukke en anmodning igennem, kun tydeligt sende brugeren til /login.
+  if (error || !aalData) {
+    return NextResponse.redirect(new URL("/login", request.url));
+  }
+
+  if (aalData.currentLevel === "aal2") {
     return null;
   }
 
