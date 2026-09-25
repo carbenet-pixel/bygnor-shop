@@ -36,7 +36,9 @@ export function Footer() {
           <div>
             <p className={headingClass}>Kontakt</p>
             <p className="font-medium text-slate-700">Bygnor ApS</p>
-            <p>Gersagervej 9, 2670 Greve</p>
+            <p>Gersagervej 9</p>
+            <p>2670 Greve</p>
+            <p>Danmark</p>
             <p>CVR 45822370</p>
             <p>
               Tlf. 30 14 00 00 ·{" "}
